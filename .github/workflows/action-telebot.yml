@@ -16,6 +16,9 @@ jobs:
 
             -   name: Set up docker build environment
                 uses: ./.github/actions/Docker
+                with:
+                    DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+                    DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
             
             -   name: Build and push
                 uses: docker/build-push-action@v5
