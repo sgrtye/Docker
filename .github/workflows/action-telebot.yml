@@ -3,7 +3,7 @@ name: Telebot build
 on:
     push:
         paths:
-            -   'telebot'
+            -   'telebot/**'
     workflow_dispatch:
 
 jobs:

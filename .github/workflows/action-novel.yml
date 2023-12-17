@@ -3,7 +3,7 @@ name: Novel build
 on:
     push:
         paths:
-            -   'novel'
+            -   'novel/**'
     workflow_dispatch:
 
 jobs:
