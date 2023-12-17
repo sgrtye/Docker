@@ -7,7 +7,7 @@ on:
     workflow_dispatch:
 
 jobs:
-    Mcdonalds:
+    Submanager:
         runs-on: ${{ vars.SYSTEM }}
         timeout-minutes: ${{ fromJSON(vars.TIMEOUT) }}
 
@@ -20,8 +20,8 @@ jobs:
             -   name: Build and push
                 uses: docker/build-push-action@v5
                 with:
-                context: ./submanager
-                push: true
-                platforms: linux/arm64/v8
-                tags: latest
-                names: docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/submanager:latest
+                    context: ./submanager
+                    push: true
+                    platforms: linux/arm64/v8
+                    tags: latest
+                    names: docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/submanager:latest
