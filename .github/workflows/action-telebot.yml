@@ -19,12 +19,18 @@ jobs:
                 with:
                     DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
                     DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
-            
+
+            -   name: Docker meta
+                id: meta
+                uses: docker/metadata-action@v5
+                with:
+                    images: ${{ secrets.DOCKER_HUB_USERNAME }}/telebot
+                    tags: latest
+
             -   name: Build and push
                 uses: docker/build-push-action@v5
                 with:
                     context: ./telebot
                     push: true
                     platforms: linux/arm64/v8
-                    tags: latest
-                    names: docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/telebot:latest
+                    tags: ${{ steps.meta.outputs.tags }}
