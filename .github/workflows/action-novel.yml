@@ -1,0 +1,27 @@
+name: Novel build
+
+on:
+    push:
+        paths:
+            -   './novel'
+    workflow_dispatch:
+
+jobs:
+    Mcdonalds:
+        runs-on: ${{ vars.SYSTEM }}
+        timeout-minutes: ${{ fromJSON(vars.TIMEOUT) }}
+
+        steps:
+            -   uses: actions/checkout@v4
+
+            -   name: Set up docker build environment
+                uses: ./.github/actions/Docker
+            
+            -   name: Build and push
+                uses: docker/build-push-action@v5
+                with:
+                context: ./novel
+                push: true
+                platforms: linux/arm64/v8
+                tags: latest
+                names: docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/novel:latest

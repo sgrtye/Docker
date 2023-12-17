@@ -1,0 +1,4 @@
+psutil
+docker
+requests
+pyTelegramBotAPI

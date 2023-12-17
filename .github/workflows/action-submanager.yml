@@ -1,0 +1,27 @@
+name: Submanager build
+
+on:
+    push:
+        paths:
+            -   './submanager'
+    workflow_dispatch:
+
+jobs:
+    Mcdonalds:
+        runs-on: ${{ vars.SYSTEM }}
+        timeout-minutes: ${{ fromJSON(vars.TIMEOUT) }}
+
+        steps:
+            -   uses: actions/checkout@v4
+
+            -   name: Set up docker build environment
+                uses: ./.github/actions/Docker
+            
+            -   name: Build and push
+                uses: docker/build-push-action@v5
+                with:
+                context: ./submanager
+                push: true
+                platforms: linux/arm64/v8
+                tags: latest
+                names: docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/submanager:latest
