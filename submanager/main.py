@@ -23,10 +23,12 @@ LOCATION_DICT = {
 USERNAME = os.environ.get("USERNAME")
 PASSWORD = os.environ.get("PASSWORD")
 
+HOST_URL = os.environ.get("HOST_URL")
+
 LOGIN_URL = os.environ.get("LOGIN_URL")
 INBOUND_URL = os.environ.get("INBOUND_URL")
 
-if USERNAME is None or PASSWORD is None or LOGIN_URL is None or INBOUND_URL is None:
+if USERNAME is None or PASSWORD is None or LOGIN_URL is None or INBOUND_URL is None or HOST_URL is None:
     print("Environment variables not fulfilled")
 
 
@@ -40,11 +42,11 @@ def get_credentials():
 
     results = []
     for inbound in response.json()["obj"]:
+        uuid = json.loads(inbound["settings"])["clients"][0]["id"]
         client = {
             "name": inbound["remark"],
-            "uuid": json.loads(inbound["settings"])["clients"][0]["id"],
-            "host": json.loads(inbound["settings"])["clients"][0]["id"][0:5]
-            + ".sgrtye.tk",
+            "uuid": uuid,
+            "host": uuid[0:5] + HOST_URL,
             "port": str(inbound["port"]),
             "path": json.loads(inbound["streamSettings"])["wsSettings"]["path"][1:],
         }
