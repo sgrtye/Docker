@@ -2,9 +2,9 @@ import os
 import json
 import time
 import shutil
-import schedule
 import requests
 import datetime
+import schedule
 
 DIRECTORY_PATH = "/sub"
 NGINX_PATH = "/conf.d"
