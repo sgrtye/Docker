@@ -3,6 +3,7 @@ import json
 import time
 import sendgrid
 import datetime
+import schedule
 
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
@@ -12,13 +13,28 @@ if SENDGRID_API_KEY is None or SENDER_EMAIL is None or RECIPIENT_EMAIL is None:
     print("Environment variables not fulfilled")
 
 NOTIFICATION_INTERVAL_MINS = 20
+batch_id = None
 
 sg = sendgrid.SendGridAPIClient(SENDGRID_API_KEY)
 
-if __name__ == "__main__":
-    while True:
-        response = sg.client.mail.batch.post()
-        batch_id = json.loads(response.body)["batch_id"]
+def send_notification():
+    try:
+        global batch_id
+
+        if batch_id is not None:
+            data = {
+                "batch_id": batch_id,
+                "status": "cancel"
+            }
+
+            response = sg.client.user.scheduled_sends.post(
+                request_body=data
+            )
+
+            if response.status_code != 201 or json.loads(response.body)["status"]!= 'cancel':
+                print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Failed to cancel scheduled email")
+
+        batch_id = json.loads(sg.client.mail.batch.post().body)["batch_id"]
 
         data = {
             "personalizations": [
@@ -32,18 +48,17 @@ if __name__ == "__main__":
 
         response = sg.client.mail.send.post(request_body=data)
 
-        # print(response.status_code) 202
+        if response.status_code != 202:
+            print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Failed to send scheduled email")
+            batch_id = None
+    
+    except Exception as e:
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
+        print(f"Error occured on line {e.__traceback__.tb_lineno}")
 
-        time.sleep(NOTIFICATION_INTERVAL_MINS * 60)
+if __name__ == "__main__":
+    schedule.every(NOTIFICATION_INTERVAL_MINS).minutes.do(send_notification)
 
-        data = {
-            "batch_id": batch_id,
-            "status": "cancel"
-        }
-
-        response = sg.client.user.scheduled_sends.post(
-            request_body=data
-        )
-
-        # print(response.status_code) 201
-        # print(response.body) batch_in + status
+    while True:
+        schedule.run_pending()
+        time.sleep(10)
