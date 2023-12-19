@@ -20,6 +20,8 @@ if TELEBOT_TOKEN is None or TELEBOT_USER_ID is None or PROXY_URL is None:
 
 bot = telebot.TeleBot(TELEBOT_TOKEN)
 
+UNAVAILABLE_IPS = []
+
 checkedTime = time.time()
 
 
@@ -81,7 +83,7 @@ try:
 
         for ip_entry in ip_list:
             ip, port, username, password = ip_entry.rstrip("\r").split(":")
-            if ip != "154.95.36.199":
+            if ip not in UNAVAILABLE_IPS:
                 proxies.append((ip, port, username, password))
 
         if len(proxies) == 0:
