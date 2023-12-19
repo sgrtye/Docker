@@ -1,0 +1,36 @@
+name: Netguard build
+
+on:
+    push:
+        paths:
+            -   'netguard/**'
+    workflow_dispatch:
+
+jobs:
+    Netguard:
+        runs-on: ${{ vars.SYSTEM }}
+        timeout-minutes: ${{ fromJSON(vars.TIMEOUT) }}
+
+        steps:
+            -   uses: actions/checkout@v4
+
+            -   name: Set up docker build environment
+                uses: ./.github/actions/Docker
+                with:
+                    DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+                    DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+            -   name: Docker meta
+                id: meta
+                uses: docker/metadata-action@v5
+                with:
+                    images: ${{ secrets.DOCKER_HUB_USERNAME }}/netguard
+                    tags: latest
+
+            -   name: Build and push
+                uses: docker/build-push-action@v5
+                with:
+                    context: ./netguard
+                    push: true
+                    platforms: linux/amd64, linux/arm64/v8
+                    tags: ${{ steps.meta.outputs.tags }}
