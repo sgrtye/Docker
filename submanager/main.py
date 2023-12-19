@@ -28,7 +28,13 @@ HOST_URL = os.environ.get("HOST_URL")
 LOGIN_URL = os.environ.get("LOGIN_URL")
 INBOUND_URL = os.environ.get("INBOUND_URL")
 
-if USERNAME is None or PASSWORD is None or LOGIN_URL is None or INBOUND_URL is None or HOST_URL is None:
+if (
+    USERNAME is None
+    or PASSWORD is None
+    or LOGIN_URL is None
+    or INBOUND_URL is None
+    or HOST_URL is None
+):
     print("Environment variables not fulfilled")
 
 
@@ -46,7 +52,7 @@ def get_credentials():
         client = {
             "name": inbound["remark"],
             "uuid": uuid,
-            "host": uuid[0:5] + HOST_URL,
+            "host": uuid[0:5] + "." + HOST_URL,
             "port": str(inbound["port"]),
             "path": json.loads(inbound["streamSettings"])["wsSettings"]["path"][1:],
         }
