@@ -57,6 +57,7 @@ def send_notification():
         print(f"Error occured on line {e.__traceback__.tb_lineno}")
 
 if __name__ == "__main__":
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Net Guard started")
     schedule.every(NOTIFICATION_INTERVAL_MINS).minutes.do(send_notification)
 
     while True:
