@@ -42,7 +42,7 @@ def send_notification():
             ],
             "from": {"email": SENDER_EMAIL},
             "content": [{"type": "text/plain", "value": f"Host is down!, email sent on {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}"}],
-            "send_at": int(time.time()) + ((NOTIFICATION_INTERVAL_MINS + 15) * 60),
+            "send_at": int(time.time()) + ((NOTIFICATION_INTERVAL_MINS + 11) * 60),
             "batch_id": batch_id,
         }
 
