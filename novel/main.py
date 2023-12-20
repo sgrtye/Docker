@@ -173,10 +173,10 @@ try:
             except Exception as e:
                 print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
                 print(
-                    f"Error occured when checking {books[i][1]} with proxy {ip}:{port}"
+                    f"Error occurred when checking {books[i][1]} with proxy {ip}:{port}"
                 )
                 print(
-                    f"Error occured during iteration {index} on line {e.__traceback__.tb_lineno}"
+                    f"Error occurred during iteration {index} on line {e.__traceback__.tb_lineno}"
                 )
                 time.sleep(sleepInterval)
                 if index == len(proxies) - 1:
@@ -190,9 +190,9 @@ except Exception as e:
     bot.send_message(TELEBOT_USER_ID, "Novel monitor encountered unexpected exception")
     bot.send_message(
         TELEBOT_USER_ID,
-        f"The exception occured when processing book {books[i][1]} with error message: {str(e)}",
+        f"The exception occurred when processing book {books[i][1]} with error message: {str(e)}",
     )
     print(
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "Error occured, program terminated",
+        "Error occurred, program terminated",
     )

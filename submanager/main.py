@@ -204,7 +204,7 @@ def update_client_config(locations, providers, credentials):
 
     print(
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "New client config files generaged",
+        "New client config files generated",
     )
 
 
@@ -232,7 +232,7 @@ def update_nginx_config(credentials):
 
     print(
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "Successfully generaged new NGINX config",
+        "Successfully generated new NGINX config",
     )
 
 
@@ -256,7 +256,7 @@ def update(nginx=False):
 
     except Exception as e:
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
-        print(f"Error occured on line {e.__traceback__.tb_lineno}")
+        print(f"Error occurred on line {e.__traceback__.tb_lineno}")
 
 
 if __name__ == "__main__":
