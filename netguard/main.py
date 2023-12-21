@@ -25,10 +25,8 @@ def send_notification():
         response = sg.client.user.scheduled_sends.get()
 
         for item in json.loads(response.body):
-            batch_id = item['batch_id']
-
             try:
-                response = sg.client.user.scheduled_sends._(batch_id).delete()
+                response = sg.client.user.scheduled_sends._(item['batch_id']).delete()
             except Exception as e:
                 pass
 
