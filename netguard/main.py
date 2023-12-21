@@ -30,7 +30,7 @@ def send_notification():
             try:
                 response = sg.client.user.scheduled_sends._(batch_id).delete()
             except Exception as e:
-                print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Failed to remove cancellation record")
+                pass
 
         if batch_id is not None:
             data = {
