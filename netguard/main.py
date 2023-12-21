@@ -13,16 +13,26 @@ HOST_NAME = os.environ.get("HOST_NAME")
 if SENDGRID_API_KEY is None or SENDER_EMAIL is None or RECIPIENT_EMAIL is None or HOST_NAME is None:
     print("Environment variables not fulfilled")
 
-NOTIFICATION_INTERVAL_MINS = 60
+NOTIFICATION_INTERVAL_MINS = 20
 batch_id = None
+previous_batch_id = None
 
 sg = sendgrid.SendGridAPIClient(SENDGRID_API_KEY)
 
 def send_notification():
     try:
         global batch_id
+        global previous_batch_id
+
+        if previous_batch_id is not None:
+            response = sg.client.user.scheduled_sends._(batch_id).delete()
+
+            if response.status_code != 204:
+                print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Failed to cancel previous records")
 
         if batch_id is not None:
+            previous_batch_id = batch_id
+
             data = {
                 "batch_id": batch_id,
                 "status": "cancel"
