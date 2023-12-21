@@ -15,24 +15,24 @@ if SENDGRID_API_KEY is None or SENDER_EMAIL is None or RECIPIENT_EMAIL is None o
 
 NOTIFICATION_INTERVAL_MINS = 20
 batch_id = None
-previous_batch_id = None
 
 sg = sendgrid.SendGridAPIClient(SENDGRID_API_KEY)
 
 def send_notification():
     try:
         global batch_id
-        global previous_batch_id
 
-        if previous_batch_id is not None:
-            response = sg.client.user.scheduled_sends._(batch_id).delete()
+        response = sg.client.user.scheduled_sends.get()
 
-            if response.status_code != 204:
-                print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Failed to cancel previous records")
+        for item in json.loads(response.body):
+            batch_id = item['batch_id']
+
+            try:
+                response = sg.client.user.scheduled_sends._(batch_id).delete()
+            except Exception as e:
+                print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Failed to remove cancellation record")
 
         if batch_id is not None:
-            previous_batch_id = batch_id
-
             data = {
                 "batch_id": batch_id,
                 "status": "cancel"
