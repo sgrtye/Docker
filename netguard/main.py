@@ -2,8 +2,8 @@ import os
 import json
 import time
 import sendgrid
-import datetime
 import schedule
+import datetime
 
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
