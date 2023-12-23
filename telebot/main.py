@@ -168,4 +168,4 @@ def handle_novel_command(message):
 
 if __name__ == "__main__":
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Telegram bot started")
-    bot.infinity_polling(logger_level = None)
+    bot.infinity_polling(logger_level=None)
