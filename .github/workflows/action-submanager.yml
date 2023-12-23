@@ -21,4 +21,3 @@ jobs:
                     DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
                     DOCKER_BUILD_NAME: 'submanager'
                     DOCKER_BUILD_PATH: './submanager'
-                    DOCKER_BUILD_TAG: 'latest'

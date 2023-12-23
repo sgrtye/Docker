@@ -21,4 +21,3 @@ jobs:
                     DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
                     DOCKER_BUILD_NAME: 'novel'
                     DOCKER_BUILD_PATH: './novel'
-                    DOCKER_BUILD_TAG: 'latest'

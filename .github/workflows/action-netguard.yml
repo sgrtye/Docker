@@ -21,4 +21,3 @@ jobs:
                     DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
                     DOCKER_BUILD_NAME: 'netguard'
                     DOCKER_BUILD_PATH: './netguard'
-                    DOCKER_BUILD_TAG: 'latest'
