@@ -38,7 +38,7 @@ runs:
             uses: docker/metadata-action@v5
             with:
                 images: ${{ inputs.DOCKER_HUB_USERNAME }}/${{ inputs.DOCKER_BUILD_NAME }}
-                tags: latest
+                tags: ${{ inputs.DOCKER_BUILD_TAG }}
 
         -   name: Build and push
             uses: docker/build-push-action@v5
