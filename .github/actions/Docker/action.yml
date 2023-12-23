@@ -7,6 +7,15 @@ inputs:
     DOCKER_HUB_TOKEN: 
         description: "DOCKER HUB TOKEN"
         required: true
+    DOCKER_BUILD_NAME: 
+        description: "DOCKER BUILD NAME"
+        required: true
+    DOCKER_BUILD_PATH: 
+        description: "DOCKER BUILD PATH"
+        required: true
+    DOCKER_BUILD_TAG: 
+        description: "DOCKER BUILD TAG"
+        required: true
 
 runs:
     using: 'composite'
@@ -23,3 +32,18 @@ runs:
             with:
                 username: ${{ inputs.DOCKER_HUB_USERNAME }}
                 password: ${{ inputs.DOCKER_HUB_TOKEN }}
+
+        -   name: Docker meta
+            id: meta
+            uses: docker/metadata-action@v5
+            with:
+                images: ${{ inputs.DOCKER_HUB_USERNAME }}/${{ inputs.DOCKER_BUILD_NAME }}
+                tags: latest
+
+        -   name: Build and push
+            uses: docker/build-push-action@v5
+            with:
+                context: ${{ inputs.DOCKER_BUILD_PATH }}
+                push: true
+                platforms: linux/amd64, linux/arm64/v8
+                tags: ${{ steps.meta.outputs.tags }}

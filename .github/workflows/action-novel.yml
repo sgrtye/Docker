@@ -19,18 +19,6 @@ jobs:
                 with:
                     DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
                     DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-            -   name: Docker meta
-                id: meta
-                uses: docker/metadata-action@v5
-                with:
-                    images: ${{ secrets.DOCKER_HUB_USERNAME }}/novel
-                    tags: latest
-
-            -   name: Build and push
-                uses: docker/build-push-action@v5
-                with:
-                    context: ./novel
-                    push: true
-                    platforms: linux/amd64, linux/arm64/v8
-                    tags: ${{ steps.meta.outputs.tags }}
+                    DOCKER_BUILD_NAME: 'novel'
+                    DOCKER_BUILD_PATH: './novel'
+                    DOCKER_BUILD_TAG: 'latest'
