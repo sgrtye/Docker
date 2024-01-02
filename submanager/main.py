@@ -18,6 +18,7 @@ LOCATION_DICT = {
     "dongguan": "东莞",
     "tangshan": "唐山",
     "guangzhou": "广州",
+    "shijiazhuang": "石家庄",
 }
 
 USERNAME = os.environ.get("USERNAME")
