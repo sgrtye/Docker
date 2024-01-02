@@ -153,8 +153,7 @@ def generate_check_config(locations, uuid, host, path, save_path):
     with open(save_path, "w", encoding="utf-8") as file:
         file.write(config_content)
 
-
-def update_client_config(locations, providers, credentials):
+def remove_old_client_config():
     directory_path = os.path.join(DIRECTORY_PATH, "conf")
     if os.path.exists(directory_path):
         shutil.rmtree(directory_path)
@@ -163,6 +162,7 @@ def update_client_config(locations, providers, credentials):
             "Old client config files removed",
         )
 
+def update_client_config(locations, providers, credentials):
     for client in credentials:
         name, uuid, host, path = (
             client["name"],
@@ -236,7 +236,7 @@ def update_nginx_config(credentials):
     )
 
 
-def update(nginx=False):
+def update(nginx=False, remove_old_file=False):
     try:
         locations = get_location_ip()
         providers = get_provider_ip()
@@ -252,6 +252,9 @@ def update(nginx=False):
         if nginx:
             update_nginx_config(credentials)
 
+        if remove_old_file:
+            remove_old_client_config()
+
         update_client_config(locations, providers, credentials)
 
     except Exception as e:
@@ -260,7 +263,7 @@ def update(nginx=False):
 
 
 if __name__ == "__main__":
-    update(nginx=True)
+    update(nginx=True, remove_old_file=True)
 
     schedule.every().day.at("00:00").do(update)
     schedule.every().day.at("06:00").do(update)
