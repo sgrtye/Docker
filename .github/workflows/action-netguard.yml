@@ -1,23 +1,23 @@
 name: Netguard build
 
 on:
-    push:
-        paths:
-            -   'netguard/**'
-    workflow_dispatch:
+  push:
+    paths:
+      - 'netguard/**'
+  workflow_dispatch:
 
 jobs:
-    Netguard:
-        runs-on: ${{ vars.SYSTEM }}
-        timeout-minutes: ${{ fromJSON(vars.TIMEOUT) }}
+  Netguard:
+    runs-on: ${{ vars.SYSTEM }}
+    timeout-minutes: ${{ fromJSON(vars.TIMEOUT) }}
 
-        steps:
-            -   uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-            -   name: Build and push to Docker Hub
-                uses: ./.github/actions/Docker
-                with:
-                    DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-                    DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
-                    DOCKER_BUILD_NAME: 'netguard'
-                    DOCKER_BUILD_PATH: './netguard'
+      - name: Build and push to Docker Hub
+        uses: ./.github/actions/Docker
+        with:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+          DOCKER_BUILD_NAME: 'netguard'
+          DOCKER_BUILD_PATH: './netguard'

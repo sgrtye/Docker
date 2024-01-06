@@ -1,23 +1,23 @@
 name: Submanager build
 
 on:
-    push:
-        paths:
-            -   'submanager/**'
-    workflow_dispatch:
+  push:
+    paths:
+      - 'submanager/**'
+  workflow_dispatch:
 
 jobs:
-    Submanager:
-        runs-on: ${{ vars.SYSTEM }}
-        timeout-minutes: ${{ fromJSON(vars.TIMEOUT) }}
+  Submanager:
+    runs-on: ${{ vars.SYSTEM }}
+    timeout-minutes: ${{ fromJSON(vars.TIMEOUT) }}
 
-        steps:
-            -   uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-            -   name: Build and push to Docker Hub
-                uses: ./.github/actions/Docker
-                with:
-                    DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-                    DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
-                    DOCKER_BUILD_NAME: 'submanager'
-                    DOCKER_BUILD_PATH: './submanager'
+      - name: Build and push to Docker Hub
+        uses: ./.github/actions/Docker
+        with:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+          DOCKER_BUILD_NAME: 'submanager'
+          DOCKER_BUILD_PATH: './submanager'
