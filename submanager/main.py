@@ -55,7 +55,7 @@ def get_credentials():
         client = {
             "name": inbound["remark"],
             "uuid": uuid,
-            "host": "".join(random.choice(string.ascii_lowercase) for _ in range(5)) + "." + HOST_URL,
+            "host": "".join(random.choice(string.ascii_lowercase) for _ in range(random.randint(10, 20))) + "." + HOST_URL,
             "port": str(inbound["port"]),
             "path": json.loads(inbound["streamSettings"])["wsSettings"]["path"][1:],
         }
