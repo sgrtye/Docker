@@ -1,6 +1,8 @@
 import os
 import json
 import time
+import random
+import string
 import shutil
 import requests
 import datetime
@@ -53,7 +55,7 @@ def get_credentials():
         client = {
             "name": inbound["remark"],
             "uuid": uuid,
-            "host": uuid[0:5] + "." + HOST_URL,
+            "host": "".join(random.choice(string.ascii_lowercase) for _ in range(5)) + "." + HOST_URL,
             "port": str(inbound["port"]),
             "path": json.loads(inbound["streamSettings"])["wsSettings"]["path"][1:],
         }
