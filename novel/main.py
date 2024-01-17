@@ -140,7 +140,7 @@ try:
             }
 
             try:
-                url = f"https://www.69shuba.com/book/{books[i][0]}.htm"
+                url = f"https://www.69xinshu.com/book/{books[i][0]}.htm"
                 html = requests.get(
                     url,
                     headers=headers,
