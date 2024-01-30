@@ -55,7 +55,12 @@ def get_credentials():
         client = {
             "name": inbound["remark"],
             "uuid": uuid,
-            "host": "".join(random.choice(string.ascii_lowercase) for _ in range(random.randint(10, 20))) + "." + HOST_URL,
+            "host": "".join(
+                random.choice(string.ascii_lowercase)
+                for _ in range(random.randint(10, 15))
+            )
+            + "."
+            + HOST_URL,
             "port": str(inbound["port"]),
             "path": json.loads(inbound["streamSettings"])["wsSettings"]["path"][1:],
         }
@@ -118,6 +123,18 @@ def get_location_ip():
     return locations
 
 
+def generate_config_line(name, server_ip):
+    line = (
+        "\n"
+        + '  - {"name":"'
+        + f"{name}"
+        + '","type":"vless","server":"'
+        + f"{server_ip}"
+        + '","port":443,"uuid":"UUID_FULL","tls":true,"servername":"HOST_ADDRESS","network":"ws","ws-opts":{"path":"/CLIENT_PATH","headers":{"host":"HOST_ADDRESS"}},"client-fingerprint":"chrome"}'
+    )
+    return line
+
+
 def generate_config(servers, uuid, host, path, config_path, save_path):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
@@ -134,20 +151,19 @@ def generate_config(servers, uuid, host, path, config_path, save_path):
         file.write(config_content)
 
 
-def generate_check_config(locations, uuid, host, path, save_path):
+def generate_check_config(locations, providers, uuid, host, path, save_path):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     config_content = "proxies:"
 
     for loc, loc_value in locations.items():
-        for key, value in loc_value.items():
-            config_content = (
-                config_content + "\n" + '    -   {"name":"'
-                f"{LOCATION_DICT.get(loc, loc) + key[0:2] + key[4:5]}"
-                + '","type":"vless","server":"'
-                + f"{value}"
-                + '","port":443,"uuid":"UUID_FULL","tls":true,"servername":"HOST_ADDRESS","network":"ws","ws-opts":{"path":"/CLIENT_PATH","headers":{"host":"HOST_ADDRESS"}},"client-fingerprint":"chrome"}'
-            )
+        for name, server_ip in loc_value.items():
+            name = LOCATION_DICT.get(loc, loc) + name[0:2] + name[4:5]
+            config_content = config_content + generate_config_line(name, server_ip)
+
+    for pro, pro_value in providers.items():
+        for name, server_ip in pro_value.items():
+            config_content = config_content + generate_config_line(name[0:5], server_ip)
 
     config_content = config_content.replace("UUID_FULL", uuid)
     config_content = config_content.replace("CLIENT_PATH", path)
@@ -155,6 +171,7 @@ def generate_check_config(locations, uuid, host, path, save_path):
 
     with open(save_path, "w", encoding="utf-8") as file:
         file.write(config_content)
+
 
 def remove_old_client_config():
     directory_path = os.path.join(DIRECTORY_PATH, "conf")
@@ -165,6 +182,7 @@ def remove_old_client_config():
             "Old client config files removed",
         )
 
+
 def update_client_config(locations, providers, credentials):
     for client in credentials:
         name, uuid, host, path = (
@@ -174,21 +192,10 @@ def update_client_config(locations, providers, credentials):
             client["path"],
         )
 
-        servers = {
-            key: value
-            for provider in providers.values()
-            for key, value in provider.items()
-        }
-        config_path = os.path.join(DIRECTORY_PATH, "file", "unruled.yaml")
         save_path = os.path.join(
             DIRECTORY_PATH, "conf", rf"{name}-{path}/china/config.yaml"
         )
-        generate_config(servers, uuid, host, path, config_path, save_path)
-
-        save_path = os.path.join(
-            DIRECTORY_PATH, "conf", rf"{name}-{path}/check/config.yaml"
-        )
-        generate_check_config(locations, uuid, host, path, save_path)
+        generate_check_config(locations, providers, uuid, host, path, save_path)
 
         for loc, loc_value in locations.items():
             for pro, pro_value in providers.items():
@@ -199,7 +206,7 @@ def update_client_config(locations, providers, credentials):
                     },
                     **loc_value,
                 }
-                config_path = os.path.join(DIRECTORY_PATH, "file", "ruled.yaml")
+                config_path = os.path.join(DIRECTORY_PATH, "file", "config.yaml")
                 save_path = os.path.join(
                     DIRECTORY_PATH, "conf", rf"{name}-{path}/{loc}/{pro}/config.yaml"
                 )
