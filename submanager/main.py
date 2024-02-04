@@ -275,9 +275,7 @@ def update(nginx=False, remove_old_file=False):
 if __name__ == "__main__":
     update(nginx=True, remove_old_file=True)
 
-    schedule.every().day.at("00:00").do(update)
     schedule.every().day.at("06:00").do(update)
-    schedule.every().day.at("12:00").do(update)
     schedule.every().day.at("18:00").do(update)
 
     while True:
