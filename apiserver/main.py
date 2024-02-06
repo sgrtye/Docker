@@ -5,6 +5,7 @@ import math
 import yfinance
 import requests
 import schedule
+import datetime
 import threading
 import http.server
 import socketserver
@@ -74,7 +75,7 @@ def formatBytes(bytes):
 
     i = math.floor(math.log(bytes) / math.log(k))
 
-    return f'{bytes / math.pow(k, i):.2f}' + ' ' + sizes[i]
+    return f'{bytes / math.pow(k, i):.2f}'.rstrip('0').rstrip('.') + ' ' + sizes[i]
 
 
 def bytesToSpeed(bytes):
@@ -107,7 +108,7 @@ def convert_exchange_rate(rate):
     if rate == 0:
         return '0'
     
-    return f'{1 / rate:.2f}'
+    return f'{1 / rate:.2f}'.rstrip('0').rstrip('.')
 
 
 def update_exchange_status():
@@ -126,7 +127,7 @@ def update_exchange_status():
 
 
 def convert_stock_price(price):
-    return f'{price:.2f}'
+    return f'{price:.2f}'.rstrip('0').rstrip('.')
 
 
 def update_stock_status():
@@ -148,6 +149,8 @@ if __name__ == "__main__":
     schedule.every().hour.do(update_stock_status)
 
     schedule.run_all()
+
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "API server started")
 
     while True:
         schedule.run_pending()
