@@ -32,7 +32,7 @@ exchange_status = None
 stock_status = None
 
 xui_session = requests.Session()
-tickers = yfinance.Tickers("^IXIC ^GSPC 000001.SS ^HSI")
+tickers = yfinance.Tickers("^IXIC ^GSPC ^HSI 000001.SS")
 
 
 class apiHandler(http.server.BaseHTTPRequestHandler):
@@ -138,14 +138,14 @@ def update_stock_status():
 
     IXIC = tickers.tickers["^IXIC"].history(period="1d", interval="60m")
     GSPC = tickers.tickers["^GSPC"].history(period="1d", interval="60m")
-    SS = tickers.tickers["000001.SS"].history(period="1d", interval="60m")
     HSI = tickers.tickers["^HSI"].history(period="1d", interval="60m")
+    SS = tickers.tickers["000001.SS"].history(period="1d", interval="60m")
 
     stock_status = {
         "IXIC": convert_stock_price(IXIC["Close"][IXIC["Close"].keys().max()]),
         "GSPC": convert_stock_price(GSPC["Close"][GSPC["Close"].keys().max()]),
-        "SS": convert_stock_price(SS["Close"][SS["Close"].keys().max()]),
         "HSI": convert_stock_price(HSI["Close"][HSI["Close"].keys().max()]),
+        "SS": convert_stock_price(SS["Close"][SS["Close"].keys().max()]),
     }
 
 
