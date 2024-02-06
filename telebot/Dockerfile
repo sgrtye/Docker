@@ -5,7 +5,7 @@ ENV TZ=Europe/London
 RUN apk add gcc musl-dev linux-headers
 
 COPY ./requirements.txt /requirements.txt
-# RUN pip install --upgrade pip
+RUN pip install --upgrade pip
 RUN pip install -r /requirements.txt
 
 COPY ./main.py /main.py
