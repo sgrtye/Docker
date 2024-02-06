@@ -133,11 +133,16 @@ def convert_stock_price(price):
 def update_stock_status():
     global stock_status
     
+    IXIC = tickers.tickers['^IXIC'].history(period="1d", interval="60m")
+    GSPC = tickers.tickers['^GSPC'].history(period="1d", interval="60m")
+    SS = tickers.tickers['000001.SS'].history(period="1d", interval="60m")
+    HSI = tickers.tickers['^HSI'].history(period="1d", interval="60m")
+
     stock_status = {
-        'IXIC': convert_stock_price(tickers.tickers['^IXIC'].info['open']),
-        'GSPC': convert_stock_price(tickers.tickers['^GSPC'].info['open']),
-        'SS': convert_stock_price(tickers.tickers['000001.SS'].info['open']),
-        'HSI': convert_stock_price(tickers.tickers['^HSI'].info['open']),
+        'IXIC': convert_stock_price(IXIC['Close'][IXIC['Close'].keys().max()]),
+        'GSPC': convert_stock_price(GSPC['Close'][GSPC['Close'].keys().max()]),
+        'SS': convert_stock_price(SS['Close'][SS['Close'].keys().max()]),
+        'HSI': convert_stock_price(HSI['Close'][HSI['Close'].keys().max()]),
     }
 
 if __name__ == "__main__":
@@ -146,7 +151,7 @@ if __name__ == "__main__":
     api_thread.start()
 
     schedule.every().hour.do(update_exchange_status)
-    schedule.every().hour.do(update_stock_status)
+    schedule.every(30).minutes.do(update_stock_status)
 
     schedule.run_all()
 
