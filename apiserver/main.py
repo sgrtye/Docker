@@ -136,10 +136,10 @@ def convert_stock_price(price):
 def update_stock_status():
     global stock_status
 
-    IXIC = tickers.tickers["^IXIC"].history(period="1d", interval="60m")
-    GSPC = tickers.tickers["^GSPC"].history(period="1d", interval="60m")
-    HSI = tickers.tickers["^HSI"].history(period="1d", interval="60m")
-    SS = tickers.tickers["000001.SS"].history(period="1d", interval="60m")
+    IXIC = tickers.tickers["^IXIC"].history(period="2d", interval="60m")
+    GSPC = tickers.tickers["^GSPC"].history(period="2d", interval="60m")
+    HSI = tickers.tickers["^HSI"].history(period="2d", interval="60m")
+    SS = tickers.tickers["000001.SS"].history(period="2d", interval="60m")
 
     stock_status = {
         "IXIC": convert_stock_price(IXIC["Close"][IXIC["Close"].keys().max()]),
