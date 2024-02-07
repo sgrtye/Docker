@@ -30,7 +30,7 @@ stock_status = None
 
 xui_session = requests.Session()
 tickers = yfinance.Tickers(
-    "^IXIC ^GSPC ^HSI 000001.SS GBPCNY=X EURCNY=X CNY=X CADCNY=X"
+    "^IXIC ^GSPC 000001.SS ^HSI GBPCNY=X EURCNY=X CNY=X CADCNY=X"
 )
 
 
