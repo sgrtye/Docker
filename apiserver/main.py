@@ -113,20 +113,32 @@ def update_xui_status():
         xui_status["recv"] = format_bytes(response["obj"]["netTraffic"]["recv"])
 
 
+def get_ticker_info(symbol, trend=False):
+    current_info = tickers.tickers[symbol].history(period="7d", interval="1d")
+    current_price = current_info["Close"][current_info["Close"].keys().min()]
+
+    if not trend:
+        return current_price
+    
+    old_info = tickers.tickers[symbol].history(period="2d", interval="60m")
+    old_price =  old_info["Close"][old_info["Close"].keys().max()]
+
+    return ((old_price - current_price) / current_price) * 100
+
+
 def update_exchange_status():
     global exchange_status
 
     try:
-        USD = tickers.tickers["CNY=X"].history(period="2d", interval="60m")
-        GBP = tickers.tickers["GBPCNY=X"].history(period="2d", interval="60m")
-        EUR = tickers.tickers["EURCNY=X"].history(period="2d", interval="60m")
-        CAD = tickers.tickers["CADCNY=X"].history(period="2d", interval="60m")
-
-        exchange_status = {
-            "GBP": format_number(GBP["Close"][GBP["Close"].keys().max()]),
-            "EUR": format_number(EUR["Close"][EUR["Close"].keys().max()]),
-            "USD": format_number(USD["Close"][USD["Close"].keys().max()]),
-            "CAD": format_number(CAD["Close"][CAD["Close"].keys().max()]),
+        stock_status = {
+            "USD": format_number(get_ticker_info("CNY=X")),
+            "GBP": format_number(get_ticker_info("GBPCNY=X")),
+            "EUR": format_number(get_ticker_info("EURCNY=X")),
+            "CAD": format_number(get_ticker_info("CADCNY=X")),
+            "USD_TREND": format_number(get_ticker_info("CNY=X", trend=True)),
+            "GBP_TREND": format_number(get_ticker_info("GBPCNY=X", trend=True)),
+            "EUR_TREND": format_number(get_ticker_info("EURCNY=X", trend=True)),
+            "CAD_TREND": format_number(get_ticker_info("CADCNY=X", trend=True)),
         }
     except Exception as e:
         pass
@@ -136,16 +148,15 @@ def update_stock_status():
     global stock_status
 
     try:
-        HSI = tickers.tickers["^HSI"].history(period="2d", interval="60m")
-        IXIC = tickers.tickers["^IXIC"].history(period="2d", interval="60m")
-        GSPC = tickers.tickers["^GSPC"].history(period="2d", interval="60m")
-        SS = tickers.tickers["000001.SS"].history(period="2d", interval="60m")
-
         stock_status = {
-            "SS": format_number(SS["Close"][SS["Close"].keys().max()]),
-            "HSI": format_number(HSI["Close"][HSI["Close"].keys().max()]),
-            "IXIC": format_number(IXIC["Close"][IXIC["Close"].keys().max()]),
-            "GSPC": format_number(GSPC["Close"][GSPC["Close"].keys().max()]),
+            "HSI": format_number(get_ticker_info("^HSI")),
+            "IXIC": format_number(get_ticker_info("^IXIC")),
+            "GSPC": format_number(get_ticker_info("^GSPC")),
+            "SS": format_number(get_ticker_info("000001.SS")),
+            "HSI_TREND": format_number(get_ticker_info("^HSI", trend=True)),
+            "IXIC_TREND": format_number(get_ticker_info("^IXIC", trend=True)),
+            "GSPC_TREND": format_number(get_ticker_info("^GSPC", trend=True)),
+            "SS_TREND": format_number(get_ticker_info("000001.SS", trend=True)),
         }
     except Exception as e:
         pass
