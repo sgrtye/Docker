@@ -149,10 +149,10 @@ def update_stock_status():
 
     try:
         stock_status = {
-            "HSI": format_number(get_ticker_info("^HSI")),
-            "IXIC": format_number(get_ticker_info("^IXIC")),
-            "GSPC": format_number(get_ticker_info("^GSPC")),
-            "SS": format_number(get_ticker_info("000001.SS")),
+            "HSI": "HK$" + format_number(get_ticker_info("^HSI")),
+            "IXIC": "$" + format_number(get_ticker_info("^IXIC")),
+            "GSPC": "$" + format_number(get_ticker_info("^GSPC")),
+            "SS": "¥" + format_number(get_ticker_info("000001.SS")),
             "HSI_TREND": format_number(get_ticker_info("^HSI", trend=True)),
             "IXIC_TREND": format_number(get_ticker_info("^IXIC", trend=True)),
             "GSPC_TREND": format_number(get_ticker_info("^GSPC", trend=True)),
