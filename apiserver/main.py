@@ -119,9 +119,9 @@ def get_ticker_info(symbol, trend=False):
 
     if not trend:
         return current_price
-    
+
     old_info = tickers.tickers[symbol].history(period="2d", interval="60m")
-    old_price =  old_info["Close"][old_info["Close"].keys().max()]
+    old_price = old_info["Close"][old_info["Close"].keys().max()]
 
     return ((old_price - current_price) / current_price) * 100
 
@@ -141,7 +141,10 @@ def update_exchange_status():
             "CAD_TREND": format_number(get_ticker_info("CADCNY=X", trend=True)),
         }
     except Exception as e:
-        pass
+        print(
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Error occurred when fetching exchange status",
+        )
 
 
 def update_stock_status():
@@ -159,7 +162,10 @@ def update_stock_status():
             "SS_TREND": format_number(get_ticker_info("000001.SS", trend=True)),
         }
     except Exception as e:
-        pass
+        print(
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Error occurred when fetching stock status",
+        )
 
 
 if __name__ == "__main__":
