@@ -130,7 +130,7 @@ def update_exchange_status():
     global exchange_status
 
     try:
-        stock_status = {
+        exchange_status = {
             "USD": format_number(get_ticker_info("CNY=X")),
             "GBP": format_number(get_ticker_info("GBPCNY=X")),
             "EUR": format_number(get_ticker_info("EURCNY=X")),
