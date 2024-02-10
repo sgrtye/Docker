@@ -135,9 +135,11 @@ def get_ticker_info(symbol, trend=False):
 def get_info_by_ticker(tickers):
     info = dict()
     tickers = tickers.split(" ")
+
     for ticker in tickers:
         info[ticker] = format_number(get_ticker_info(ticker))
         info[ticker + "_TREND"] = format_number(get_ticker_info(ticker, trend=True))
+
     return info
 
 
