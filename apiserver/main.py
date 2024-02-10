@@ -111,39 +111,41 @@ def update_xui_status():
 
     if response.status_code == 200:
         response = response.json()
-        xui_status["up"] = bytes_to_speed(response["obj"]["netIO"]["up"])
-        xui_status["down"] = bytes_to_speed(response["obj"]["netIO"]["down"])
-        xui_status["sent"] = format_bytes(response["obj"]["netTraffic"]["sent"])
-        xui_status["recv"] = format_bytes(response["obj"]["netTraffic"]["recv"])
+        xui_status = {
+            "up": bytes_to_speed(response["obj"]["netIO"]["up"]),
+            "down": bytes_to_speed(response["obj"]["netIO"]["down"]),
+            "sent": format_bytes(response["obj"]["netTraffic"]["sent"]),
+            "recv": format_bytes(response["obj"]["netTraffic"]["recv"]),
+        }
 
 
 def get_ticker_info(symbol, trend=False):
-    current_info = tickers.tickers[symbol].history(period="7d", interval="1d")
-    current_price = current_info["Close"][current_info["Close"].keys().min()]
+    current_info = tickers.tickers[symbol].history(period="2d", interval="60m")
+    current_price = current_info["Close"][current_info["Close"].keys().max()]
 
     if not trend:
         return current_price
 
-    old_info = tickers.tickers[symbol].history(period="2d", interval="60m")
-    old_price = old_info["Close"][old_info["Close"].keys().max()]
+    old_info = tickers.tickers[symbol].history(period="5d", interval="1d")
+    old_price = old_info["Close"][old_info["Close"].keys().min()]
 
-    return ((old_price - current_price) / current_price) * 100
+    return ((current_price - old_price) / current_price) * 100
+
+
+def get_info_by_ticker(tickers):
+    info = dict()
+    tickers = tickers.split(" ")
+    for ticker in tickers:
+        info[ticker] = format_number(get_ticker_info(ticker))
+        info[ticker + "_TREND"] = format_number(get_ticker_info(ticker, trend=True))
+    return info
 
 
 def update_exchange_status():
     global exchange_status
 
     try:
-        exchange_status = {
-            "USD": format_number(get_ticker_info("CNY=X")),
-            "GBP": format_number(get_ticker_info("GBPCNY=X")),
-            "EUR": format_number(get_ticker_info("EURCNY=X")),
-            "CAD": format_number(get_ticker_info("CADCNY=X")),
-            "USD_TREND": format_number(get_ticker_info("CNY=X", trend=True)),
-            "GBP_TREND": format_number(get_ticker_info("GBPCNY=X", trend=True)),
-            "EUR_TREND": format_number(get_ticker_info("EURCNY=X", trend=True)),
-            "CAD_TREND": format_number(get_ticker_info("CADCNY=X", trend=True)),
-        }
+        exchange_status = get_info_by_ticker("CNY=X GBPCNY=X EURCNY=X CADCNY=X")
 
     except Exception as e:
         print(
@@ -156,16 +158,7 @@ def update_stock_status():
     global stock_status
 
     try:
-        stock_status = {
-            "HSI": "HK$" + format_number(get_ticker_info("^HSI")),
-            "IXIC": "$" + format_number(get_ticker_info("^IXIC")),
-            "GSPC": "$" + format_number(get_ticker_info("^GSPC")),
-            "SS": "¥" + format_number(get_ticker_info("000001.SS")),
-            "HSI_TREND": format_number(get_ticker_info("^HSI", trend=True)),
-            "IXIC_TREND": format_number(get_ticker_info("^IXIC", trend=True)),
-            "GSPC_TREND": format_number(get_ticker_info("^GSPC", trend=True)),
-            "SS_TREND": format_number(get_ticker_info("000001.SS", trend=True)),
-        }
+        stock_status = get_info_by_ticker("^IXIC ^GSPC 000001.SS ^HSI")
 
     except Exception as e:
         print(
