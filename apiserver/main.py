@@ -134,7 +134,7 @@ def update_exchange_status():
     global exchange_status
 
     try:
-        status = {
+        exchange_status = {
             "USD": format_number(get_ticker_info("CNY=X")),
             "GBP": format_number(get_ticker_info("GBPCNY=X")),
             "EUR": format_number(get_ticker_info("EURCNY=X")),
@@ -144,7 +144,6 @@ def update_exchange_status():
             "EUR_TREND": format_number(get_ticker_info("EURCNY=X", trend=True)),
             "CAD_TREND": format_number(get_ticker_info("CADCNY=X", trend=True)),
         }
-        exchange_status = status
 
     except Exception as e:
         print(
@@ -157,7 +156,7 @@ def update_stock_status():
     global stock_status
 
     try:
-        status = {
+        stock_status = {
             "HSI": "HK$" + format_number(get_ticker_info("^HSI")),
             "IXIC": "$" + format_number(get_ticker_info("^IXIC")),
             "GSPC": "$" + format_number(get_ticker_info("^GSPC")),
@@ -167,7 +166,6 @@ def update_stock_status():
             "GSPC_TREND": format_number(get_ticker_info("^GSPC", trend=True)),
             "SS_TREND": format_number(get_ticker_info("000001.SS", trend=True)),
         }
-        stock_status = status
 
     except Exception as e:
         print(
