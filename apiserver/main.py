@@ -129,7 +129,7 @@ def get_ticker_info(symbol, trend=False):
     old_info = tickers.tickers[symbol].history(period="5d", interval="1d")
     old_price = old_info["Close"][old_info["Close"].keys().min()]
 
-    return ((current_price - old_price) / current_price) * 100
+    return ((current_price - old_price) / old_price) * 100
 
 
 def get_info_by_ticker(tickers):
@@ -174,8 +174,8 @@ if __name__ == "__main__":
     api_thread.daemon = True
     api_thread.start()
 
-    schedule.every(30).minutes.do(update_exchange_status)
-    schedule.every(30).minutes.do(update_stock_status)
+    schedule.every().hour.at(":15").do(update_exchange_status)
+    schedule.every().hour.at(":45").do(update_stock_status)
 
     schedule.run_all()
 
