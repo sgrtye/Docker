@@ -126,7 +126,7 @@ def get_ticker_info(symbol, trend=False):
     if not trend:
         return current_price
 
-    old_info = tickers.tickers[symbol].history(period="5d", interval="1d")
+    old_info = tickers.tickers[symbol].history(period="7d", interval="1d")
     old_price = old_info["Close"][old_info["Close"].keys().min()]
 
     return ((current_price - old_price) / old_price) * 100
