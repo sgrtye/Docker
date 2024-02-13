@@ -34,7 +34,7 @@ stock_status = dict()
 
 xui_session = requests.Session()
 tickers = yfinance.Tickers(
-    "^IXIC ^GSPC 000001.SS AAPL GOOG NVDA TSLA GBPCNY=X EURCNY=X CNY=X CADCNY=X"
+    "^IXIC ^GSPC 000001.SS AAPL GOOG NVDA TSLA GBPCNY=X CNY=X CADCNY=X"
 )
 
 CURRENCY_SYMBOL = {
@@ -161,7 +161,7 @@ def update_exchange_status():
     global exchange_status
 
     try:
-        info = get_info_by_ticker("CNY=X GBPCNY=X EURCNY=X CADCNY=X")
+        info = get_info_by_ticker("GBPCNY=X CNY=X CADCNY=X")
 
         for ticker, value in info.items():
             exchange_status[ticker] = value
