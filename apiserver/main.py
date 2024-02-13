@@ -28,14 +28,24 @@ if (
 ):
     print("Environment variables not fulfilled")
 
-xui_status = None
-exchange_status = None
-stock_status = None
+xui_status = dict()
+exchange_status = dict()
+stock_status = dict()
 
 xui_session = requests.Session()
 tickers = yfinance.Tickers(
-    "^IXIC ^GSPC 000001.SS ^HSI GBPCNY=X EURCNY=X CNY=X CADCNY=X"
+    "^IXIC ^GSPC 000001.SS AAPL GOOG NVDA TSLA GBPCNY=X EURCNY=X CNY=X CADCNY=X"
 )
+
+CURRENCY_SYMBOL = {
+    "^IXIC": "$",
+    "^GSPC": "$",
+    "000001.SS": "¥",
+    "AAPL": "$",
+    "GOOG": "$",
+    "NVDA": "$",
+    "TSLA": "$",
+}
 
 
 class apiHandler(http.server.BaseHTTPRequestHandler):
@@ -137,8 +147,12 @@ def get_info_by_ticker(tickers):
     tickers = tickers.split(" ")
 
     for ticker in tickers:
-        info[ticker] = format_number(get_ticker_info(ticker))
-        info[ticker + "_TREND"] = format_number(get_ticker_info(ticker, trend=True)) + "%"
+        info[ticker] = CURRENCY_SYMBOL.get(ticker, "") + format_number(
+            get_ticker_info(ticker)
+        )
+        info[ticker + "_TREND"] = (
+            format_number(get_ticker_info(ticker, trend=True)) + "%"
+        )
 
     return info
 
@@ -147,7 +161,10 @@ def update_exchange_status():
     global exchange_status
 
     try:
-        exchange_status = get_info_by_ticker("CNY=X GBPCNY=X EURCNY=X CADCNY=X")
+        info = get_info_by_ticker("CNY=X GBPCNY=X EURCNY=X CADCNY=X")
+
+        for ticker, value in info.items():
+            exchange_status[ticker] = value
 
     except Exception as e:
         print(
@@ -160,7 +177,10 @@ def update_stock_status():
     global stock_status
 
     try:
-        stock_status = get_info_by_ticker("^IXIC ^GSPC 000001.SS ^HSI")
+        info = get_info_by_ticker("^IXIC ^GSPC 000001.SS")
+
+        for ticker, value in info.items():
+            stock_status[ticker] = value
 
     except Exception as e:
         print(
@@ -169,13 +189,30 @@ def update_stock_status():
         )
 
 
+def update_index_status():
+    global stock_status
+
+    try:
+        info = get_info_by_ticker("AAPL GOOG NVDA TSLA")
+
+        for ticker, value in info.items():
+            stock_status[ticker] = value
+
+    except Exception as e:
+        print(
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Error occurred when fetching index status",
+        )
+
+
 if __name__ == "__main__":
     api_thread = threading.Thread(target=start_api_server)
     api_thread.daemon = True
     api_thread.start()
 
-    schedule.every().hour.at(":15").do(update_exchange_status)
-    schedule.every().hour.at(":45").do(update_stock_status)
+    schedule.every().hour.at(":10").do(update_exchange_status)
+    schedule.every().hour.at(":30").do(update_stock_status)
+    schedule.every().hour.at(":50").do(update_index_status)
 
     schedule.run_all()
 
