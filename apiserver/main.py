@@ -138,7 +138,7 @@ def get_info_by_ticker(tickers):
 
     for ticker in tickers:
         info[ticker] = format_number(get_ticker_info(ticker))
-        info[ticker + "_TREND"] = format_number(get_ticker_info(ticker, trend=True))
+        info[ticker + "_TREND"] = format_number(get_ticker_info(ticker, trend=True)) + "%"
 
     return info
 
