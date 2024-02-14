@@ -151,12 +151,9 @@ def get_info_by_ticker(tickers):
     tickers = tickers.split(" ")
 
     for ticker in tickers:
-        info[ticker] = CURRENCY_SYMBOL.get(ticker, "") + format_number(
-            get_ticker_info(ticker)
-        )
-        info[ticker + "_TREND"] = (
-            format_number(get_ticker_info(ticker, trend=True)) + "%"
-        )
+        symbol = CURRENCY_SYMBOL.get(ticker, "")
+        info[ticker] = symbol + format_number(get_ticker_info(ticker))
+        info[ticker + "_TREND"] = format_number(get_ticker_info(ticker, trend=True))
 
     return info
 
