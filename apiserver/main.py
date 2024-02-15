@@ -37,20 +37,6 @@ tickers = yfinance.Tickers(
     "^IXIC ^GSPC 000001.SS AAPL GOOG NVDA TSLA GBPCNY=X CNY=X CADCNY=X BTC-USD"
 )
 
-CURRENCY_SYMBOL = {
-    "^IXIC": "$",
-    "^GSPC": "$",
-    "000001.SS": "¥",
-    "AAPL": "$",
-    "GOOG": "$",
-    "NVDA": "$",
-    "TSLA": "$",
-    "GBPCNY=X": "¥",
-    "CNY=X": "¥",
-    "CADCNY=X": "¥",
-    "BTC-USD": "$",
-}
-
 
 class apiHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -151,8 +137,7 @@ def get_info_by_ticker(tickers):
     tickers = tickers.split(" ")
 
     for ticker in tickers:
-        symbol = CURRENCY_SYMBOL.get(ticker, "")
-        info[ticker] = symbol + format_number(get_ticker_info(ticker))
+        info[ticker] = format_number(get_ticker_info(ticker))
         info[ticker + "_TREND"] = format_number(get_ticker_info(ticker, trend=True))
 
     return info
