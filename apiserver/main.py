@@ -115,17 +115,14 @@ def update_xui_status():
         }
 
 
-def get_ticker_info(symbol, trend=False):
+def get_ticker_prices(symbol):
     current_info = tickers.tickers[symbol].history(period="2d", interval="60m")
     current_price = current_info["Close"][current_info["Close"].keys().max()]
-
-    if not trend:
-        return current_price
 
     old_info = tickers.tickers[symbol].history(period="7d", interval="1d")
     old_price = old_info["Close"][old_info["Close"].keys().min()]
 
-    return ((current_price - old_price) / old_price) * 100
+    return (current_price, old_price)
 
 
 def get_info_by_ticker(tickers):
@@ -133,8 +130,10 @@ def get_info_by_ticker(tickers):
     tickers = tickers.split(" ")
 
     for ticker in tickers:
-        info[ticker] = format_number(get_ticker_info(ticker))
-        info[ticker + "_TREND"] = format_number(get_ticker_info(ticker, trend=True))
+        price, old_price = get_ticker_prices(ticker)
+        trend = ((price - old_price) / old_price) * 100
+        info[ticker] = format_number(price)
+        info[ticker + "_TREND"] = format_number(trend)
 
     return info
 
