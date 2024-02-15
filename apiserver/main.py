@@ -10,10 +10,6 @@ import threading
 import http.server
 import socketserver
 
-import warnings
-
-warnings.simplefilter(action="ignore", category=FutureWarning)
-
 XUI_USERNAME = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD = os.environ.get("XUI_PASSWORD")
 
