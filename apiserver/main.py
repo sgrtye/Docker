@@ -25,8 +25,8 @@ if (
     print("Environment variables not fulfilled")
 
 xui_status = dict()
+capital_status = dict()
 exchange_status = dict()
-stock_status = dict()
 
 xui_session = requests.Session()
 tickers = yfinance.Tickers(
@@ -44,12 +44,12 @@ class apiHandler(http.server.BaseHTTPRequestHandler):
             global xui_status
             update_xui_status()
             response = json.dumps(xui_status)
+        elif self.path == "/capital":
+            global capital_status
+            response = json.dumps(capital_status)
         elif self.path == "/exchange":
             global exchange_status
             response = json.dumps(exchange_status)
-        elif self.path == "/stock":
-            global stock_status
-            response = json.dumps(stock_status)
         else:
             message = {"message": "Not Found"}
             response = json.dumps(message)
@@ -138,11 +138,11 @@ def get_info_by_ticker(tickers):
     return info
 
 
-def update_exchange_status():
+def update_currency_status():
     global exchange_status
 
     try:
-        info = get_info_by_ticker("GBPCNY=X CNY=X CADCNY=X BTC-USD")
+        info = get_info_by_ticker("GBPCNY=X CNY=X CADCNY=X")
 
         for ticker, value in info.items():
             exchange_status[ticker] = value
@@ -154,14 +154,30 @@ def update_exchange_status():
         )
 
 
+def update_crypto_status():
+    global exchange_status
+
+    try:
+        info = get_info_by_ticker("BTC-USD")
+
+        for ticker, value in info.items():
+            exchange_status[ticker] = value
+
+    except Exception as e:
+        print(
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Error occurred when fetching crypto status",
+        )
+
+
 def update_stock_status():
-    global stock_status
+    global capital_status
 
     try:
         info = get_info_by_ticker("^IXIC ^GSPC 000001.SS")
 
         for ticker, value in info.items():
-            stock_status[ticker] = value
+            capital_status[ticker] = value
 
     except Exception as e:
         print(
@@ -171,13 +187,13 @@ def update_stock_status():
 
 
 def update_index_status():
-    global stock_status
+    global capital_status
 
     try:
         info = get_info_by_ticker("AAPL GOOG NVDA TSLA")
 
         for ticker, value in info.items():
-            stock_status[ticker] = value
+            capital_status[ticker] = value
 
     except Exception as e:
         print(
@@ -191,9 +207,10 @@ if __name__ == "__main__":
     api_thread.daemon = True
     api_thread.start()
 
-    schedule.every().hour.at(":10").do(update_exchange_status)
-    schedule.every().hour.at(":30").do(update_stock_status)
-    schedule.every().hour.at(":50").do(update_index_status)
+    schedule.every().hour.at(":00").do(update_stock_status)
+    schedule.every().hour.at(":15").do(update_index_status)
+    schedule.every().hour.at(":30").do(update_crypto_status)
+    schedule.every().hour.at(":45").do(update_currency_status)
 
     schedule.run_all()
 
