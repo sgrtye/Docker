@@ -2,7 +2,6 @@ import os
 import time
 import json
 import docker
-import psutil
 import telebot
 import requests
 import datetime
@@ -97,19 +96,6 @@ def dockerUsage():
     return MarkdownV2Encode(reply)
 
 
-def systemUsage():
-    reply = []
-    reply.append(f"Total CPU Usage: {psutil.cpu_percent(interval=1):.2f} %")
-    reply.append(
-        f"Total Memory Usage: {psutil.virtual_memory().used / (1024 ** 2):.2f} MB"
-    )
-    reply.append(f"Total Swap Usage: {psutil.swap_memory().used / (1024 ** 2):.2f} MB")
-    load = psutil.getloadavg()
-    reply.append(f"Load Average: {load[0]:.2f} | {load[1]:.2f} | {load[2]:.2f}")
-
-    return MarkdownV2Encode(reply)
-
-
 def novelUpdate():
     response = requests.get(NOVEL_URL)
     reply = []
@@ -146,13 +132,12 @@ def restore():
     return MarkdownV2Encode(reply)
 
 
-# Booting up all containers that were not turned off intentially
+# Booting up all containers that were not turned off manually
 restore()
 
 
 @bot.message_handler(commands=["info"])
 def handle_info_command(message):
-    bot.reply_to(message, systemUsage())
     bot.reply_to(message, dockerUsage())
 
 
