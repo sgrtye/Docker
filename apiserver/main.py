@@ -219,10 +219,10 @@ if __name__ == "__main__":
     api_thread.daemon = True
     api_thread.start()
 
-    schedule.every().hour.at(":00").do(update_status, symbols = STOCKS)
-    schedule.every().hour.at(":15").do(update_status, symbols = INDICES)
-    schedule.every().hour.at(":30").do(update_status, symbols = CRYPTOS)
-    schedule.every().hour.at(":45").do(update_status, symbols = CURRENCIES)
+    schedule.every().hour.at(":00").do(update_status, symbols=STOCKS)
+    schedule.every().hour.at(":15").do(update_status, symbols=INDICES)
+    schedule.every().hour.at(":30").do(update_status, symbols=CRYPTOS)
+    schedule.every().hour.at(":45").do(update_status, symbols=CURRENCIES)
 
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "API server started")
 
