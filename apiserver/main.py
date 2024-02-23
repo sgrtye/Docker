@@ -10,6 +10,11 @@ import threading
 import http.server
 import socketserver
 
+STOCK_CACHE_PATH = "/cache/stock_cache.json"
+INDEX_CACHE_PATH = "/cache/index_cache.json"
+CRYPTO_CACHE_PATH = "/cache/crypto_cache.json"
+CURRENCY_CACHE_PATH = "/cache/currency_cache.json"
+
 XUI_USERNAME = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD = os.environ.get("XUI_PASSWORD")
 
@@ -25,13 +30,18 @@ if (
     print("Environment variables not fulfilled")
 
 xui_status = dict()
-capital_status = dict()
-exchange_status = dict()
+stock_status = dict()
+index_status = dict()
+crypto_status = dict()
+currency_status = dict()
+
+STOCKS = "AAPL GOOG NVDA TSLA"
+INDICES = "^IXIC ^GSPC 000001.SS"
+CRYPTOS = "BTC-USD ETH-USD"
+CURRENCIES = "GBPCNY=X EURCNY=X CNY=X CADCNY=X"
 
 xui_session = requests.Session()
-tickers = yfinance.Tickers(
-    "^IXIC ^GSPC 000001.SS AAPL GOOG NVDA TSLA GBPCNY=X EURCNY=X CNY=X CADCNY=X BTC-USD ETH-USD"
-)
+tickers = yfinance.Tickers(" ".join([STOCKS, INDICES, CRYPTOS, CURRENCIES]))
 
 
 class apiHandler(http.server.BaseHTTPRequestHandler):
@@ -45,11 +55,13 @@ class apiHandler(http.server.BaseHTTPRequestHandler):
             update_xui_status()
             response = json.dumps(xui_status)
         elif self.path == "/capital":
-            global capital_status
-            response = json.dumps(capital_status)
+            global stock_status
+            global index_status
+            response = json.dumps({**stock_status, **index_status})
         elif self.path == "/exchange":
-            global exchange_status
-            response = json.dumps(exchange_status)
+            global crypto_status
+            global currency_status
+            response = json.dumps({**crypto_status, **currency_status})
         else:
             message = {"message": "Not Found"}
             response = json.dumps(message)
@@ -64,6 +76,36 @@ class apiHandler(http.server.BaseHTTPRequestHandler):
 def start_api_server():
     with socketserver.TCPServer(("0.0.0.0", 8888), apiHandler) as httpd:
         httpd.serve_forever()
+
+
+def load_cache(CACHE_PATH, symbols):
+    result = dict()
+    symbols = symbols.split()
+    if os.path.exists(CACHE_PATH):
+        with open(CACHE_PATH, "r") as file:
+            cache = json.load(file)
+
+            for ticker, value in cache.items():
+                symbol = ticker
+                if symbol.endswith("_TREND"):
+                    symbol = symbol[:-6]
+
+                if symbol in symbols:
+                    result[ticker] = value
+
+    return result
+
+
+def load_all_cache():
+    global stock_status
+    global index_status
+    global crypto_status
+    global currency_status
+
+    stock_status.update(load_cache(STOCK_CACHE_PATH, STOCKS))
+    index_status.update(load_cache(INDEX_CACHE_PATH, INDICES))
+    crypto_status.update(load_cache(CRYPTO_CACHE_PATH, CRYPTOS))
+    currency_status.update(load_cache(CURRENCY_CACHE_PATH, CURRENCIES))
 
 
 def format_number(number):
@@ -129,90 +171,58 @@ def get_info_by_ticker(tickers):
     info = dict()
     tickers = tickers.split(" ")
 
-    for ticker in tickers:
-        price, old_price = get_ticker_prices(ticker)
-        trend = ((price - old_price) / old_price) * 100
-        info[ticker] = format_number(price)
-        info[ticker + "_TREND"] = format_number(trend)
+    try:
+        for ticker in tickers:
+            price, old_price = get_ticker_prices(ticker)
+            trend = ((price - old_price) / old_price) * 100
+            info[ticker] = format_number(price)
+            info[ticker + "_TREND"] = format_number(trend)
+    except Exception as e:
+        print(
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Error occurred when fetching information",
+        )
 
     return info
 
 
-def update_currency_status():
-    global exchange_status
+def update_status(symbols):
+    global stock_status
+    global index_status
+    global crypto_status
+    global currency_status
 
-    try:
-        info = get_info_by_ticker("GBPCNY=X EURCNY=X CNY=X CADCNY=X")
+    info = get_info_by_ticker(symbols)
 
-        for ticker, value in info.items():
-            exchange_status[ticker] = value
-
-    except Exception as e:
-        print(
-            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Error occurred when fetching exchange status",
-        )
-
-
-def update_crypto_status():
-    global exchange_status
-
-    try:
-        info = get_info_by_ticker("BTC-USD ETH-USD")
-
-        for ticker, value in info.items():
-            exchange_status[ticker] = value
-
-    except Exception as e:
-        print(
-            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Error occurred when fetching crypto status",
-        )
-
-
-def update_stock_status():
-    global capital_status
-
-    try:
-        info = get_info_by_ticker("^IXIC ^GSPC 000001.SS")
-
-        for ticker, value in info.items():
-            capital_status[ticker] = value
-
-    except Exception as e:
-        print(
-            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Error occurred when fetching stock status",
-        )
-
-
-def update_index_status():
-    global capital_status
-
-    try:
-        info = get_info_by_ticker("AAPL GOOG NVDA TSLA")
-
-        for ticker, value in info.items():
-            capital_status[ticker] = value
-
-    except Exception as e:
-        print(
-            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Error occurred when fetching index status",
-        )
+    if symbols == STOCKS:
+        stock_status.update(info)
+        with open(STOCK_CACHE_PATH, "w") as file:
+            json.dump(stock_status, file)
+    elif symbols == INDICES:
+        index_status.update(info)
+        with open(INDEX_CACHE_PATH, "w") as file:
+            json.dump(index_status, file)
+    elif symbols == CRYPTOS:
+        crypto_status.update(info)
+        with open(CRYPTO_CACHE_PATH, "w") as file:
+            json.dump(crypto_status, file)
+    elif symbols == CURRENCIES:
+        currency_status.update(info)
+        with open(CURRENCY_CACHE_PATH, "w") as file:
+            json.dump(currency_status, file)
 
 
 if __name__ == "__main__":
+    load_all_cache()
+
     api_thread = threading.Thread(target=start_api_server)
     api_thread.daemon = True
     api_thread.start()
 
-    schedule.every().hour.at(":00").do(update_stock_status)
-    schedule.every().hour.at(":15").do(update_index_status)
-    schedule.every().hour.at(":30").do(update_crypto_status)
-    schedule.every().hour.at(":45").do(update_currency_status)
-
-    schedule.run_all()
+    schedule.every().hour.at(":00").do(update_status, symbols = STOCKS)
+    schedule.every().hour.at(":15").do(update_status, symbols = INDICES)
+    schedule.every().hour.at(":30").do(update_status, symbols = CRYPTOS)
+    schedule.every().hour.at(":45").do(update_status, symbols = CURRENCIES)
 
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "API server started")
 
