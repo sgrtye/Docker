@@ -9,7 +9,7 @@ import http.server
 import socketserver
 from lxml import etree
 
-CACHE_PATH = "/novel/cache.json"
+CACHE_PATH = "/cache/cache.json"
 
 TELEBOT_TOKEN = os.environ.get("TELEBOT_TOKEN")
 TELEBOT_USER_ID = os.environ.get("TELEBOT_USER_ID")
