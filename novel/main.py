@@ -128,6 +128,21 @@ headers = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.8 Safari/537.36"
 }
 
+
+def get_book_title(url, proxy=None):
+    html = requests.get(
+        url,
+        headers=headers,
+        proxies=proxy,
+    )
+    html.encoding = "gbk"
+    tree = etree.HTML(html.text, parser=None)
+
+    div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
+    span_element = div_element.xpath("./ul/li[1]/a/span")[0]
+    return span_element.text
+
+
 try:
     while True:
         for index in range(len(proxies)):
@@ -141,20 +156,13 @@ try:
 
             try:
                 url = f"https://www.69xinshu.com/book/{books[i][0]}.htm"
-                html = requests.get(
-                    url,
-                    headers=headers,
-                    proxies=proxy,
-                )
-                html.encoding = "gbk"
-                tree = etree.HTML(html.text, parser=None)
-
-                div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
-                span_element = div_element.xpath("./ul/li[1]/a/span")[0]
-                title = span_element.text
+                title = get_book_title(url, proxy)
 
                 if title != titles.get(books[i][1]):
                     if title == titles.get(books[i][1] + "previous"):
+                        break
+
+                    if title != get_book_title(url):
                         break
 
                     if titles.get(books[i][1]) is not None:
