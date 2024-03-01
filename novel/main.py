@@ -130,17 +130,23 @@ headers = {
 
 
 def get_book_title(url, proxy=None):
-    html = requests.get(
-        url,
-        headers=headers,
-        proxies=proxy,
-    )
-    html.encoding = "gbk"
-    tree = etree.HTML(html.text, parser=None)
+    try:
+        html = requests.get(
+            url,
+            headers=headers,
+            proxies=proxy,
+        )
+        html.encoding = "gbk"
+        tree = etree.HTML(html.text, parser=None)
 
-    div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
-    span_element = div_element.xpath("./ul/li[1]/a/span")[0]
-    return span_element.text
+        div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
+        span_element = div_element.xpath("./ul/li[1]/a/span")[0]
+        return span_element.text
+
+    except Exception as e:
+        if proxy is None:
+            print("The following error occurred when using native ip")
+        raise e
 
 
 try:
