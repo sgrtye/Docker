@@ -41,7 +41,7 @@ def dockerUsage():
     reply = []
 
     # Iterate over containers and retrieve resource usage
-    reply.append(f"{'Name':<10} {'CPU':<5}  {'Memory':<5}")
+    reply.append(f"{'Name':<12} {'CPU':<5}  {'Memory':<5}")
 
     stats1 = dict()
     stats2 = dict()
@@ -84,7 +84,7 @@ def dockerUsage():
         total_memory_usage += memory_usage
 
         reply.append(
-            f"{container_name:<10} {cpu_percentage:<5.2f}% {memory_usage_mb:<5.1f} MB"
+            f"{container_name:<12} {cpu_percentage:<5.2f}% {memory_usage_mb:<5.1f} MB"
         )
 
     # Total usage
