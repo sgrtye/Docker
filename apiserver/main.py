@@ -16,18 +16,11 @@ INDEX_CACHE_PATH = "/cache/index_cache.json"
 CRYPTO_CACHE_PATH = "/cache/crypto_cache.json"
 CURRENCY_CACHE_PATH = "/cache/currency_cache.json"
 
+XUI_URL = os.environ.get("XUI_URL")
 XUI_USERNAME = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD = os.environ.get("XUI_PASSWORD")
 
-XUI_LOGIN_URL = os.environ.get("XUI_LOGIN_URL")
-XUI_STATUS_URL = os.environ.get("XUI_STATUS_URL")
-
-if (
-    XUI_USERNAME is None
-    or XUI_PASSWORD is None
-    or XUI_LOGIN_URL is None
-    or XUI_STATUS_URL is None
-):
+if XUI_URL is None or XUI_USERNAME is None or XUI_PASSWORD is None:
     print("Environment variables not fulfilled")
 
 xui_status = dict()
@@ -132,30 +125,38 @@ def bytes_to_speed(bytes):
     return format_bytes(bytes) + "/s"
 
 
+def get_xui_status():
+    if xui_session.post(XUI_URL + "/panel/inbound/onlines").status_code != 200:
+        xui_session.post(
+            XUI_URL + "/login",
+            data={"username": XUI_USERNAME, "password": XUI_PASSWORD},
+        )
+
+    status = xui_session.post(XUI_URL + "/server/status")
+    online = xui_session.post(XUI_URL + "/panel/inbound/onlines")
+
+    status = status.json()
+    online = online.json()
+
+    info = {
+        "up": bytes_to_speed(status["obj"]["netIO"]["up"]),
+        "down": bytes_to_speed(status["obj"]["netIO"]["down"]),
+        "usage": format_bytes(status["obj"]["netTraffic"]["recv"]),
+        "online": len(online["obj"]) if online["obj"] else 0,
+    }
+    return info
+
+
 def update_xui_status():
     global xui_status
     xui_status = {
         "up": 0,
         "down": 0,
-        "sent": 0,
-        "recv": 0,
+        "usage": 0,
+        "online": 0,
     }
 
-    response = xui_session.post(XUI_STATUS_URL)
-    if response.status_code == 404:
-        xui_session.post(
-            XUI_LOGIN_URL, data={"username": XUI_USERNAME, "password": XUI_PASSWORD}
-        )
-        response = xui_session.post(XUI_STATUS_URL)
-
-    if response.status_code == 200:
-        response = response.json()
-        xui_status = {
-            "up": bytes_to_speed(response["obj"]["netIO"]["up"]),
-            "down": bytes_to_speed(response["obj"]["netIO"]["down"]),
-            "sent": format_bytes(response["obj"]["netTraffic"]["sent"]),
-            "recv": format_bytes(response["obj"]["netTraffic"]["recv"]),
-        }
+    xui_status.update(get_xui_status())
 
 
 def get_ticker_prices(symbol):
