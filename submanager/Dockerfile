@@ -7,13 +7,12 @@ RUN pip install --no-cache-dir -r /submanager/requirements.txt
 
 RUN mkdir -p /sub /conf.d /submanager \
     && apk --no-cache add dcron at \
-    && touch /var/log/cron.log \
-    && echo -e "python -u /submanager/update_nginx_config.py >> /var/log/cron.log 2>&1" | at now + 1 minute \
-    && echo -e "python -u /submanager/remove_subscription.py >> /var/log/cron.log 2>&1" | at now + 1 minute \
-    && echo -e "python -u /submanager/update_subscription.py >> /var/log/cron.log 2>&1" | at now + 1 minute \
-    && echo -e "0 6,18 * * * python -u /submanager/update_subscription.py >> /var/log/cron.log 2>&1\n" > /etc/crontabs/root
+    && echo -e "python -u /submanager/update_nginx_config.py 2>&1" | at now + 1 minute \
+    && echo -e "python -u /submanager/remove_subscription.py 2>&1" | at now + 1 minute \
+    && echo -e "python -u /submanager/update_subscription.py 2>&1" | at now + 1 minute \
+    && echo -e "0 6,18 * * * python -u /submanager/update_subscription.py 2>&1\n" > /etc/crontabs/root
 
 VOLUME /sub
 VOLUME /conf.d
 
-CMD ["sh", "-c", "crond -f && tail -f /var/log/cron.log"]
+CMD ["sh", "-c", "crond -f"]
