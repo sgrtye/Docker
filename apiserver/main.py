@@ -2,6 +2,7 @@ import os
 import time
 import json
 import math
+import pandas
 import yfinance
 import requests
 import schedule
@@ -158,11 +159,26 @@ def update_xui_status():
 
 
 def get_ticker_prices(symbol):
-    current_info = tickers.tickers[symbol].history(period="2d", interval="60m")
-    current_price = current_info["Close"][current_info["Close"].keys().max()]
+    history = tickers.tickers[symbol].history(period="3d", interval="60m")
 
-    old_info = tickers.tickers[symbol].history(period="7d", interval="1d")
-    old_price = old_info["Close"][old_info["Close"].keys().min()]
+    latest_time = history.index.max()
+    current_price = history.loc[latest_time]["Close"]
+
+    counter = 0
+    previous_time = latest_time - pandas.Timedelta(days=1)
+
+    while previous_time not in history.index and counter < 10:
+        previous_time = previous_time - pandas.Timedelta(days=1)
+        counter += 1
+
+    if previous_time not in history.index:
+        print(
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Error occurred when calculating time interval",
+        )
+        previous_time = history.index.min()
+
+    old_price = history.loc[previous_time]["Close"]
 
     return (current_price, old_price)
 
