@@ -167,7 +167,7 @@ def get_ticker_prices(symbol):
     counter = 0
     previous_time = latest_time - pandas.Timedelta(days=1)
 
-    while previous_time not in history.index and counter < 10:
+    while previous_time not in history.index and counter < 31:
         previous_time = previous_time - pandas.Timedelta(days=1)
         counter += 1
 
