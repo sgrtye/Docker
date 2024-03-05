@@ -15,4 +15,4 @@ RUN mkdir -p /sub /conf.d /submanager \
 VOLUME /sub
 VOLUME /conf.d
 
-CMD ["sh", "-c", "crond -f"]
+ENTRYPOINT /usr/sbin/crond -f
