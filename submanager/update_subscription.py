@@ -1,15 +1,11 @@
 import os
 import json
-import time
 import random
 import string
-import shutil
 import requests
 import datetime
-import schedule
 
 DIRECTORY_PATH = "/sub"
-NGINX_PATH = "/conf.d"
 
 LOCATION_DICT = {
     "dalian": "大连",
@@ -23,28 +19,22 @@ LOCATION_DICT = {
     "shijiazhuang": "石家庄",
 }
 
-USERNAME = os.environ.get("USERNAME")
-PASSWORD = os.environ.get("PASSWORD")
+XUI_USERNAME = os.environ.get("XUI_USERNAME")
+XUI_PASSWORD = os.environ.get("XUI_PASSWORD")
 
+XUI_URL = os.environ.get("XUI_URL")
 HOST_URL = os.environ.get("HOST_URL")
 
-LOGIN_URL = os.environ.get("LOGIN_URL")
-INBOUND_URL = os.environ.get("INBOUND_URL")
-
-if (
-    USERNAME is None
-    or PASSWORD is None
-    or LOGIN_URL is None
-    or INBOUND_URL is None
-    or HOST_URL is None
-):
+if XUI_URL is None or HOST_URL is None or XUI_USERNAME is None or XUI_PASSWORD is None:
     print("Environment variables not fulfilled")
 
 
 def get_credentials():
     session = requests.Session()
-    session.post(LOGIN_URL, data={"username": USERNAME, "password": PASSWORD})
-    response = session.post(INBOUND_URL)
+    session.post(
+        XUI_URL + "/login", data={"username": XUI_USERNAME, "password": XUI_PASSWORD}
+    )
+    response = session.post(XUI_URL + "/panel/inbound/list")
 
     if response.status_code != 200:
         return None
@@ -173,16 +163,6 @@ def generate_check_config(locations, providers, uuid, host, path, save_path):
         file.write(config_content)
 
 
-def remove_old_client_config():
-    directory_path = os.path.join(DIRECTORY_PATH, "conf")
-    if os.path.exists(directory_path):
-        shutil.rmtree(directory_path)
-        print(
-            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Old client config files removed",
-        )
-
-
 def update_client_config(locations, providers, credentials):
     for client in credentials:
         name, uuid, host, path = (
@@ -218,35 +198,7 @@ def update_client_config(locations, providers, credentials):
     )
 
 
-def update_nginx_config(credentials):
-    with open(
-        os.path.join(DIRECTORY_PATH, "file", "inbound.conf"), "r", encoding="utf-8"
-    ) as file:
-        inbound_template = file.read()
-
-    inbound = ""
-    for client in credentials:
-        port, path = client["port"], client["path"]
-        tmp = inbound_template.replace("PATH", path)
-        tmp = tmp.replace("PORT", port)
-        inbound = inbound + "\n\n" + tmp
-
-    with open(
-        os.path.join(DIRECTORY_PATH, "file", "nginx.conf"), "r", encoding="utf-8"
-    ) as file:
-        nginx_template = file.read()
-
-    config = nginx_template.replace("INBOUNDS", inbound)
-    with open(os.path.join(NGINX_PATH, "nginx.conf"), "w", encoding="utf-8") as file:
-        file.write(config)
-
-    print(
-        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "Successfully generated new NGINX config",
-    )
-
-
-def update(nginx=False, remove_old_file=False):
+def update():
     try:
         locations = get_location_ip()
         providers = get_provider_ip()
@@ -259,12 +211,6 @@ def update(nginx=False, remove_old_file=False):
         if credentials is None:
             raise Exception("No credentials available")
 
-        if nginx:
-            update_nginx_config(credentials)
-
-        if remove_old_file:
-            remove_old_client_config()
-
         update_client_config(locations, providers, credentials)
 
     except Exception as e:
@@ -273,11 +219,4 @@ def update(nginx=False, remove_old_file=False):
 
 
 if __name__ == "__main__":
-    update(nginx=True, remove_old_file=True)
-
-    schedule.every().day.at("06:00").do(update)
-    schedule.every().day.at("18:00").do(update)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(10)
+    update()
