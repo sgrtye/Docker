@@ -2,10 +2,10 @@ FROM python:3.12-alpine
 
 ENV TZ=Europe/London
 
-COPY ./requirements.txt /requirements.txt
-RUN pip install --no-cache-dir -r /requirements.txt
+COPY . /submanager
+RUN pip install --no-cache-dir -r /submanager/requirements.txt
 
-RUN mkdir -p /sub /conf.d \
+RUN mkdir -p /sub /conf.d /submanager \
     && apk --no-cache add dcron at \
     && touch /var/log/cron.log \
     && echo -e "python -u /submanager/update_nginx_config.py >> /var/log/cron.log 2>&1" | at now + 1 minute \
