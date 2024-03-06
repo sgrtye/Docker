@@ -177,6 +177,8 @@ def get_ticker_prices(symbol):
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "Error occurred when calculating time interval",
         )
+        print(symbol)
+        print(history.index)
         previous_time = history.index.min()
 
     old_price = history.loc[previous_time]["Close"]
