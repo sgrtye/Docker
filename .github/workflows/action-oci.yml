@@ -1,0 +1,23 @@
+name: OCI build
+
+on:
+  push:
+    paths:
+      - 'oci/**'
+  workflow_dispatch:
+
+jobs:
+  OCI:
+    runs-on: ${{ vars.SYSTEM }}
+    timeout-minutes: ${{ fromJSON(vars.TIMEOUT) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and push to Docker Hub
+        uses: ./.github/actions/Docker
+        with:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+          DOCKER_BUILD_NAME: 'oci'
+          DOCKER_BUILD_PATH: './oci'
