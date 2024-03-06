@@ -15,6 +15,7 @@ STOCK_CACHE_PATH = "/cache/stock_cache.json"
 INDEX_CACHE_PATH = "/cache/index_cache.json"
 CRYPTO_CACHE_PATH = "/cache/crypto_cache.json"
 CURRENCY_CACHE_PATH = "/cache/currency_cache.json"
+COMMODITY_CACHE_PATH = "/cache/commodity_cache.json"
 
 XUI_URL = os.environ.get("XUI_URL")
 XUI_USERNAME = os.environ.get("XUI_USERNAME")
@@ -28,14 +29,18 @@ stock_status = dict()
 index_status = dict()
 crypto_status = dict()
 currency_status = dict()
+commodity_status = dict()
 
 STOCKS = "AAPL GOOG NVDA TSLA"
 INDICES = "^IXIC ^GSPC 000001.SS"
 CRYPTOS = "BTC-USD ETH-USD"
 CURRENCIES = "GBPCNY=X EURCNY=X CNY=X CADCNY=X"
+COMMODITIES = "GC=F CL=F"
 
 xui_session = requests.Session()
-tickers = yfinance.Tickers(" ".join([STOCKS, INDICES, CRYPTOS, CURRENCIES]))
+tickers = yfinance.Tickers(
+    " ".join([STOCKS, INDICES, CRYPTOS, CURRENCIES, COMMODITIES])
+)
 
 
 class apiHandler(http.server.BaseHTTPRequestHandler):
@@ -55,7 +60,10 @@ class apiHandler(http.server.BaseHTTPRequestHandler):
         elif self.path == "/exchange":
             global crypto_status
             global currency_status
-            response = json.dumps({**crypto_status, **currency_status})
+            global commodity_status
+            response = json.dumps(
+                {**crypto_status, **currency_status, **commodity_status}
+            )
         else:
             message = {"message": "Not Found"}
             response = json.dumps(message)
@@ -95,11 +103,13 @@ def load_all_cache():
     global index_status
     global crypto_status
     global currency_status
+    global commodity_status
 
     stock_status.update(load_cache(STOCK_CACHE_PATH, STOCKS))
     index_status.update(load_cache(INDEX_CACHE_PATH, INDICES))
     crypto_status.update(load_cache(CRYPTO_CACHE_PATH, CRYPTOS))
     currency_status.update(load_cache(CURRENCY_CACHE_PATH, CURRENCIES))
+    commodity_status.update(load_cache(COMMODITY_CACHE_PATH, COMMODITIES))
 
 
 def format_number(number):
@@ -201,6 +211,7 @@ def update_status(symbols):
     global index_status
     global crypto_status
     global currency_status
+    global commodity_status
 
     info = get_info_by_ticker(symbols)
 
@@ -220,6 +231,10 @@ def update_status(symbols):
         currency_status.update(info)
         with open(CURRENCY_CACHE_PATH, "w") as file:
             json.dump(currency_status, file)
+    elif symbols == COMMODITIES:
+        commodity_status.update(info)
+        with open(COMMODITY_CACHE_PATH, "w") as file:
+            json.dump(commodity_status, file)
 
 
 if __name__ == "__main__":
@@ -230,9 +245,10 @@ if __name__ == "__main__":
     api_thread.start()
 
     schedule.every().hour.at(":00").do(update_status, symbols=STOCKS)
-    schedule.every().hour.at(":15").do(update_status, symbols=INDICES)
-    schedule.every().hour.at(":30").do(update_status, symbols=CRYPTOS)
-    schedule.every().hour.at(":45").do(update_status, symbols=CURRENCIES)
+    schedule.every().hour.at(":12").do(update_status, symbols=INDICES)
+    schedule.every().hour.at(":24").do(update_status, symbols=CRYPTOS)
+    schedule.every().hour.at(":36").do(update_status, symbols=CURRENCIES)
+    schedule.every().hour.at(":48").do(update_status, symbols=COMMODITIES)
 
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "API server started")
 
