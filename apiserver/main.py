@@ -160,28 +160,19 @@ def update_xui_status():
 
 
 def get_ticker_prices(symbol):
-    history = tickers.tickers[symbol].history(period="3d", interval="60m")
+    info = tickers.tickers[symbol].history(period="3d", interval="60m")
 
-    latest_time = history.index.max()
-    current_price = history.loc[latest_time]["Close"]
+    latest_time = info.index.max()
+    current_price = info.loc[latest_time]["Close"]
 
     counter = 0
     previous_time = latest_time - pandas.Timedelta(days=1)
 
-    while previous_time not in history.index and counter < 31:
+    while previous_time.date() not in info.index.date and counter < 31:
         previous_time -= pandas.Timedelta(days=1)
         counter += 1
 
-    if previous_time not in history.index:
-        print(
-            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Error occurred when calculating time interval",
-        )
-        print(symbol)
-        print(history.index)
-        previous_time = history.index.min()
-
-    old_price = history.loc[previous_time]["Close"]
+    old_price = info.loc[info[info.index >= previous_time].index.min()]["Close"]
 
     return (current_price, old_price)
 
