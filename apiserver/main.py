@@ -11,12 +11,6 @@ import threading
 import http.server
 import socketserver
 
-STOCK_CACHE_PATH = "/cache/stock_cache.json"
-INDEX_CACHE_PATH = "/cache/index_cache.json"
-CRYPTO_CACHE_PATH = "/cache/crypto_cache.json"
-CURRENCY_CACHE_PATH = "/cache/currency_cache.json"
-COMMODITY_CACHE_PATH = "/cache/commodity_cache.json"
-
 XUI_URL = os.environ.get("XUI_URL")
 XUI_USERNAME = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD = os.environ.get("XUI_PASSWORD")
@@ -37,6 +31,20 @@ CRYPTOS = "BTC-USD ETH-USD"
 CURRENCIES = "GBPCNY=X EURCNY=X CNY=X CADCNY=X"
 COMMODITIES = "GC=F CL=F"
 
+STOCK_CACHE_PATH = "/cache/stock_cache.json"
+INDEX_CACHE_PATH = "/cache/index_cache.json"
+CRYPTO_CACHE_PATH = "/cache/crypto_cache.json"
+CURRENCY_CACHE_PATH = "/cache/currency_cache.json"
+COMMODITY_CACHE_PATH = "/cache/commodity_cache.json"
+
+MAPPING = {
+    STOCKS: (stock_status, STOCK_CACHE_PATH),
+    INDICES: (index_status, INDEX_CACHE_PATH),
+    CRYPTOS: (crypto_status, CRYPTO_CACHE_PATH),
+    CURRENCIES: (currency_status, CURRENCY_CACHE_PATH),
+    COMMODITIES: (commodity_status, COMMODITY_CACHE_PATH),
+}
+
 xui_session = requests.Session()
 tickers = yfinance.Tickers(
     " ".join([STOCKS, INDICES, CRYPTOS, CURRENCIES, COMMODITIES])
@@ -50,17 +58,11 @@ class apiHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/xui":
-            global xui_status
             update_xui_status()
             response = json.dumps(xui_status)
         elif self.path == "/capital":
-            global stock_status
-            global index_status
             response = json.dumps({**stock_status, **index_status})
         elif self.path == "/exchange":
-            global crypto_status
-            global currency_status
-            global commodity_status
             response = json.dumps(
                 {**crypto_status, **currency_status, **commodity_status}
             )
@@ -99,17 +101,8 @@ def load_cache(CACHE_PATH, symbols):
 
 
 def load_all_cache():
-    global stock_status
-    global index_status
-    global crypto_status
-    global currency_status
-    global commodity_status
-
-    stock_status.update(load_cache(STOCK_CACHE_PATH, STOCKS))
-    index_status.update(load_cache(INDEX_CACHE_PATH, INDICES))
-    crypto_status.update(load_cache(CRYPTO_CACHE_PATH, CRYPTOS))
-    currency_status.update(load_cache(CURRENCY_CACHE_PATH, CURRENCIES))
-    commodity_status.update(load_cache(COMMODITY_CACHE_PATH, COMMODITIES))
+    for symbol, (status, cache_path) in MAPPING.items():
+        status.update(load_cache(cache_path, symbol))
 
 
 def format_number(number):
@@ -207,34 +200,11 @@ def get_info_by_ticker(tickers):
 
 
 def update_status(symbols):
-    global stock_status
-    global index_status
-    global crypto_status
-    global currency_status
-    global commodity_status
-
     info = get_info_by_ticker(symbols)
 
-    if symbols == STOCKS:
-        stock_status.update(info)
-        with open(STOCK_CACHE_PATH, "w") as file:
-            json.dump(stock_status, file)
-    elif symbols == INDICES:
-        index_status.update(info)
-        with open(INDEX_CACHE_PATH, "w") as file:
-            json.dump(index_status, file)
-    elif symbols == CRYPTOS:
-        crypto_status.update(info)
-        with open(CRYPTO_CACHE_PATH, "w") as file:
-            json.dump(crypto_status, file)
-    elif symbols == CURRENCIES:
-        currency_status.update(info)
-        with open(CURRENCY_CACHE_PATH, "w") as file:
-            json.dump(currency_status, file)
-    elif symbols == COMMODITIES:
-        commodity_status.update(info)
-        with open(COMMODITY_CACHE_PATH, "w") as file:
-            json.dump(commodity_status, file)
+    MAPPING[symbols][0].update(info)
+    with open(MAPPING[symbols][1], "w") as file:
+        json.dump(MAPPING[symbols][0], file)
 
 
 if __name__ == "__main__":
