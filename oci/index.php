@@ -96,6 +96,7 @@ foreach ($availabilityDomains as $availabilityDomainEntity) {
         $instanceDetails = $api->createInstance($config, $shape, getenv('OCI_SSH_PUBLIC_KEY'), $availabilityDomain);
     } catch(ApiCallException $e) {
         $message = $e->getMessage();
+        echo date("Y-m-d H:i:s") . "\n";
         echo "$message\n";
 //            if ($notifier->isSupported()) {
 //                $notifier->notify($message);
