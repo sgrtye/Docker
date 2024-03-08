@@ -144,7 +144,7 @@ def get_xui_status():
     info = {
         "up": bytes_to_speed(status["obj"]["netIO"]["up"]),
         "down": bytes_to_speed(status["obj"]["netIO"]["down"]),
-        "usage": format_bytes(status["obj"]["netTraffic"]["recv"], 0),
+        "usage": format_bytes(status["obj"]["netTraffic"]["recv"]),
         "online": len(online["obj"]) if online["obj"] else 0,
     }
     return info
