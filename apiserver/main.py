@@ -105,14 +105,14 @@ def load_all_cache():
         status.update(load_cache(cache_path, symbol))
 
 
-def format_number(number):
+def format_number(number, decimal_place=2):
     if number == 0:
         return "0"
 
-    return f"{number:.2f}".rstrip("0").rstrip(".")
+    return f"{number:.{decimal_place}f}".rstrip("0").rstrip(".")
 
 
-def format_bytes(bytes):
+def format_bytes(bytes, decimal_place=2):
     if bytes == 0:
         return "0 Byte"
 
@@ -121,11 +121,11 @@ def format_bytes(bytes):
 
     i = math.floor(math.log(bytes) / math.log(k))
 
-    return format_number(bytes / math.pow(k, i)) + " " + sizes[i]
+    return format_number(bytes / math.pow(k, i), decimal_place) + " " + sizes[i]
 
 
-def bytes_to_speed(bytes):
-    return format_bytes(bytes) + "/s"
+def bytes_to_speed(bytes, decimal_place=2):
+    return format_bytes(bytes, decimal_place) + "/s"
 
 
 def get_xui_status():
@@ -144,7 +144,7 @@ def get_xui_status():
     info = {
         "up": bytes_to_speed(status["obj"]["netIO"]["up"]),
         "down": bytes_to_speed(status["obj"]["netIO"]["down"]),
-        "usage": format_bytes(status["obj"]["netTraffic"]["recv"]),
+        "usage": format_bytes(status["obj"]["netTraffic"]["recv"], 0),
         "online": len(online["obj"]) if online["obj"] else 0,
     }
     return info
