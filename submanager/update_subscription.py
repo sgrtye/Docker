@@ -88,6 +88,20 @@ def get_provider_ip():
     return providers
 
 
+def get_selected_ip():
+    response = requests.get('https://ip.164746.xyz/ipTop.html')
+
+    if response.status_code != 200:
+        return None
+    
+    selected_ips = response.text.split(",")
+    ips = {
+        '优选节点4_IP': selected_ips[0],
+        '优选节点5_IP': selected_ips[1],
+    }
+    return ips
+
+
 def read_txt_file(file_path):
     with open(file_path, "r") as file:
         lines = file.readlines()
@@ -210,6 +224,14 @@ def update():
 
         if credentials is None:
             raise Exception("No credentials available")
+        
+        selected_ips = get_selected_ip()
+
+        if selected_ips is None:
+            raise Exception("No selected ip available")
+        else:
+            for key, value in locations.items():
+                value.update(selected_ips)
 
         update_client_config(locations, providers, credentials)
 
