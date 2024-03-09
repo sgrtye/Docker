@@ -191,6 +191,14 @@ def update_client_config(locations, providers, credentials):
         )
         generate_check_config(locations, providers, uuid, host, path, save_path)
 
+        selected_ips = get_selected_ip()
+
+        if selected_ips is None:
+            print("No selected ip available")
+        else:
+            for key, value in locations.items():
+                value.update(selected_ips)
+
         for loc, loc_value in locations.items():
             for pro, pro_value in providers.items():
                 servers = {
@@ -224,17 +232,6 @@ def update():
 
         if credentials is None:
             raise Exception("No credentials available")
-
-        selected_ips = get_selected_ip()
-
-        if selected_ips is None:
-            print(
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "No selected ip available",
-            )
-        else:
-            for key, value in locations.items():
-                value.update(selected_ips)
 
         update_client_config(locations, providers, credentials)
 
