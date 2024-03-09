@@ -36,12 +36,20 @@ def send_notification():
                 "status": "cancel"
             }
 
-            response = sg.client.user.scheduled_sends.post(
-                request_body=data
-            )
+            for _ in range(5):
+                try:
+                    response = sg.client.user.scheduled_sends.post(
+                        request_body=data
+                    )
 
-            if response.status_code != 201 or json.loads(response.body)["status"] != 'cancel':
-                print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Failed to cancel scheduled email")
+                    if response.status_code == 201 or json.loads(response.body)["status"] == 'cancel':
+                        break
+                    else:
+                        time.sleep(5)
+                        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Failed to cancel scheduled email")
+                
+                except Exception as e:
+                    pass
 
         batch_id = json.loads(sg.client.mail.batch.post().body)["batch_id"]
 
