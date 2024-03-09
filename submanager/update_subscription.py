@@ -89,15 +89,15 @@ def get_provider_ip():
 
 
 def get_selected_ip():
-    response = requests.get('https://ip.164746.xyz/ipTop.html')
+    response = requests.get("https://ip.164746.xyz/ipTop.html")
 
     if response.status_code != 200:
         return None
-    
+
     selected_ips = response.text.split(",")
     ips = {
-        '优选节点4_IP': selected_ips[0],
-        '优选节点5_IP': selected_ips[1],
+        "优选节点4_IP": selected_ips[0],
+        "优选节点5_IP": selected_ips[1],
     }
     return ips
 
@@ -224,11 +224,14 @@ def update():
 
         if credentials is None:
             raise Exception("No credentials available")
-        
+
         selected_ips = get_selected_ip()
 
         if selected_ips is None:
-            raise Exception("No selected ip available")
+            print(
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "No selected ip available",
+            )
         else:
             for key, value in locations.items():
                 value.update(selected_ips)
