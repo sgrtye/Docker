@@ -44,10 +44,10 @@ def send_notification():
 
                     if response.status_code == 201 or json.loads(response.body)["status"] == 'cancel':
                         break
-                    else:
-                        time.sleep(5)
-                        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Failed to cancel scheduled email")
-                
+
+                    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Failed to cancel scheduled email")
+                    time.sleep(5)
+
                 except Exception as e:
                     pass
 
