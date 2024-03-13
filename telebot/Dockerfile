@@ -5,4 +5,6 @@ ENV TZ=Europe/London
 COPY . /app
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
+RUN pyarmor gen --output /app /app/main.py
+
 CMD ["python", "-u", "/app/main.py"]
