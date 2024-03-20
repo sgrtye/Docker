@@ -2,6 +2,7 @@ import os
 import time
 import json
 import math
+import random
 import pandas
 import yfinance
 import requests
@@ -128,12 +129,16 @@ def bytes_to_speed(bytes, decimal_place=2):
     return format_bytes(bytes, decimal_place) + "/s"
 
 
-def get_xui_status():
+def xui_login():
     if xui_session.post(XUI_URL + "/panel/inbound/onlines").status_code != 200:
         xui_session.post(
             XUI_URL + "/login",
             data={"username": XUI_USERNAME, "password": XUI_PASSWORD},
         )
+
+
+def get_xui_status():
+    xui_login()
 
     status = xui_session.post(XUI_URL + "/server/status")
     online = xui_session.post(XUI_URL + "/panel/inbound/onlines")
@@ -145,7 +150,7 @@ def get_xui_status():
         "up": bytes_to_speed(status["obj"]["netIO"]["up"]),
         "down": bytes_to_speed(status["obj"]["netIO"]["down"]),
         "usage": format_bytes(status["obj"]["netTraffic"]["recv"]),
-        "online": len(online["obj"]) if online["obj"] else 0,
+        "online": random.choice(online["obj"]) if online["obj"] else '-',
     }
     return info
 
