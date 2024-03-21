@@ -237,7 +237,6 @@ def update():
 
     except Exception as e:
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
-        print(f"Error occurred on line {e.__traceback__.tb_lineno}")
 
 
 if __name__ == "__main__":
