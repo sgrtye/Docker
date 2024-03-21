@@ -77,12 +77,16 @@ def update_nginx_config(credentials):
 
 
 def update():
-    credentials = get_credentials()
+    try:
+        credentials = get_credentials()
 
-    if credentials is None:
-        raise Exception("No credentials available")
+        if credentials is None:
+            raise Exception("No credentials available")
 
-    update_nginx_config(credentials)
+        update_nginx_config(credentials)
+
+    except Exception as e:
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
 
 
 if __name__ == "__main__":
