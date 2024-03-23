@@ -20,7 +20,7 @@ if TELEBOT_TOKEN is None or TELEBOT_USER_ID is None or PROXY_URL is None:
 
 bot = telebot.TeleBot(TELEBOT_TOKEN)
 
-UNAVAILABLE_IPS = ["154.95.36.199"]
+UNAVAILABLE_IPS = ["38.154.227.167"]
 
 checkedTime = time.time()
 
