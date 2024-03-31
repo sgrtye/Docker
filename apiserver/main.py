@@ -51,6 +51,8 @@ tickers = yfinance.Tickers(
     " ".join([STOCKS, INDICES, CRYPTOS, CURRENCIES, COMMODITIES])
 )
 
+lastUpdatedTime = time.time()
+
 
 class apiHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -67,6 +69,13 @@ class apiHandler(http.server.BaseHTTPRequestHandler):
             response = json.dumps(
                 {**crypto_status, **currency_status, **commodity_status}
             )
+        elif self.path == "/health":
+            if time.time() - lastUpdatedTime > 1200:
+                self.send_response(500)
+            else:
+                self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
         else:
             message = {"message": "Not Found"}
             response = json.dumps(message)
@@ -150,7 +159,7 @@ def get_xui_status():
         "up": bytes_to_speed(status["obj"]["netIO"]["up"]),
         "down": bytes_to_speed(status["obj"]["netIO"]["down"]),
         "usage": format_bytes(status["obj"]["netTraffic"]["recv"]),
-        "online": random.choice(online["obj"]) if online["obj"] else '-',
+        "online": random.choice(online["obj"]) if online["obj"] else "-",
     }
     return info
 
@@ -210,6 +219,9 @@ def update_status(symbols):
     MAPPING[symbols][0].update(info)
     with open(MAPPING[symbols][1], "w") as file:
         json.dump(MAPPING[symbols][0], file)
+
+    global lastUpdatedTime
+    lastUpdatedTime = time.time()
 
 
 if __name__ == "__main__":
