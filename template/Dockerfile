@@ -9,7 +9,7 @@ RUN pyarmor gen --output /app /app/main.py
 
 RUN apk --update --no-cache add curl
 
-HEALTHCHECK --interval=60s --timeout=3s CMD curl -f http://localhost:80/health || exit 1
+HEALTHCHECK --start-period=10s --interval=60s --timeout=3s CMD curl -f http://localhost:80/health || exit 1
 
 CMD ["python", "-u", "/app/main.py"]
 
