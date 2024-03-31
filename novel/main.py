@@ -22,7 +22,7 @@ bot = telebot.TeleBot(TELEBOT_TOKEN)
 
 UNAVAILABLE_IPS = ["38.154.227.167", "154.95.36.199"]
 
-checkedTime = time.time()
+lastUpdatedTime = time.time()
 
 
 class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
@@ -45,17 +45,16 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
             }
             response = json.dumps(filtered_titles)
             self.wfile.write(response.encode("utf-8"))
-        elif self.path == "/status":
-            global checkedTime
+        elif self.path == "/health":
+            global lastUpdatedTime
             global loopTime
-
-            self.send_response(200)
-            self.send_header("Content-type", "text/plain")
-            self.end_headers()
-            if time.time() - checkedTime < loopTime:
-                self.wfile.write(b"OK")
+            
+            if time.time() - lastUpdatedTime > loopTime:
+                self.send_response(500)
             else:
-                self.wfile.write(b"Failed")
+                self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
         else:
             self.send_response(404)
             self.send_header("Content-type", "text/plain")
@@ -198,7 +197,7 @@ try:
                 if index == len(proxies) - 1:
                     raise e
 
-        checkedTime = time.time()
+        lastUpdatedTime = time.time()
         time.sleep(sleepInterval)
         i = (i + 1) % len(books)
 
