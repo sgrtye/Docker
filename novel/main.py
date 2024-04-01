@@ -22,54 +22,6 @@ bot = telebot.TeleBot(TELEBOT_TOKEN)
 
 UNAVAILABLE_IPS = ["154.95.36.199"]
 
-last_updated_time = time.time()
-
-
-class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
-    def log_message(self, format, *args):
-        # Override the log_message method to do nothing
-        pass
-
-    def do_GET(self):
-        if self.path == "/update":
-            global titles
-
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-
-            filtered_titles = {
-                key: value
-                for key, value in titles.items()
-                if not key.endswith("previous")
-            }
-            response = json.dumps(filtered_titles)
-            self.wfile.write(response.encode("utf-8"))
-        elif self.path == "/health":
-            global last_updated_time
-            global loop_time
-            
-            if time.time() - last_updated_time > loop_time:
-                self.send_response(500)
-            else:
-                self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-        else:
-            self.send_response(404)
-            self.send_header("Content-type", "text/plain")
-            self.end_headers()
-            self.wfile.write(b"Not Found")
-
-
-def start_health_server():
-    with socketserver.TCPServer(("0.0.0.0", 8008), HealthCheckHandler) as httpd:
-        httpd.serve_forever()
-
-
-health_thread = threading.Thread(target=start_health_server)
-health_thread.daemon = True
-health_thread.start()
 
 proxies = []
 
@@ -110,6 +62,7 @@ books = [
 ]
 i = 0
 j = 0
+last_updated_time = time.time()
 loop_time = len(books) * 5 * 60
 sleep_interval = loop_time / len(books)
 
@@ -148,6 +101,47 @@ def get_book_title(url, proxy=None):
             print("The following error occurred when using native ip")
         raise e
 
+
+class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        # Override the log_message method to do nothing
+        pass
+
+    def do_GET(self):
+        if self.path == "/update":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+
+            filtered_titles = {
+                key: value
+                for key, value in titles.items()
+                if not key.endswith("previous")
+            }
+            response = json.dumps(filtered_titles)
+            self.wfile.write(response.encode("utf-8"))
+        elif self.path == "/health":
+            if time.time() - last_updated_time > loop_time:
+                self.send_response(500)
+            else:
+                self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+        else:
+            self.send_response(404)
+            self.send_header("Content-type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"Not Found")
+
+
+def start_health_server():
+    with socketserver.TCPServer(("0.0.0.0", 8008), HealthCheckHandler) as httpd:
+        httpd.serve_forever()
+
+
+health_thread = threading.Thread(target=start_health_server)
+health_thread.daemon = True
+health_thread.start()
 
 try:
     while True:
