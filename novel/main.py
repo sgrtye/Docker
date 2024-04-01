@@ -22,7 +22,7 @@ bot = telebot.TeleBot(TELEBOT_TOKEN)
 
 UNAVAILABLE_IPS = ["154.95.36.199"]
 
-lastUpdatedTime = time.time()
+last_updated_time = time.time()
 
 
 class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
@@ -46,10 +46,10 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
             response = json.dumps(filtered_titles)
             self.wfile.write(response.encode("utf-8"))
         elif self.path == "/health":
-            global lastUpdatedTime
-            global loopTime
+            global last_updated_time
+            global loop_time
             
-            if time.time() - lastUpdatedTime > loopTime:
+            if time.time() - last_updated_time > loop_time:
                 self.send_response(500)
             else:
                 self.send_response(200)
@@ -110,18 +110,18 @@ books = [
 ]
 i = 0
 j = 0
-loopTime = len(books) * 5 * 60
-sleepInterval = loopTime / len(books)
+loop_time = len(books) * 5 * 60
+sleep_interval = loop_time / len(books)
 
 titles = dict()
 if os.path.exists(CACHE_PATH):
     with open(CACHE_PATH, "r") as file:
         titles = json.load(file)
-        booknames = set(name for _, name in books)
-        booknames_previous = set(name + "previous" for _, name in books)
+        book_name = set(name for _, name in books)
+        book_name_previous = set(name + "previous" for _, name in books)
         dict_copy = titles.copy()
         for book in dict_copy.keys():
-            if book not in booknames and book not in booknames_previous:
+            if book not in book_name and book not in book_name_previous:
                 del titles[book]
 
 headers = {
@@ -193,12 +193,12 @@ try:
                 print(
                     f"Error occurred during iteration {index} on line {e.__traceback__.tb_lineno}"
                 )
-                time.sleep(sleepInterval)
+                time.sleep(sleep_interval)
                 if index == len(proxies) - 1:
                     raise e
 
-        lastUpdatedTime = time.time()
-        time.sleep(sleepInterval)
+        last_updated_time = time.time()
+        time.sleep(sleep_interval)
         i = (i + 1) % len(books)
 
 except Exception as e:

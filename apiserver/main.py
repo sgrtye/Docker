@@ -51,7 +51,7 @@ tickers = yfinance.Tickers(
     " ".join([STOCKS, INDICES, CRYPTOS, CURRENCIES, COMMODITIES])
 )
 
-lastUpdatedTime = time.time()
+last_updated_time = time.time()
 
 
 class apiHandler(http.server.BaseHTTPRequestHandler):
@@ -70,13 +70,11 @@ class apiHandler(http.server.BaseHTTPRequestHandler):
                 {**crypto_status, **currency_status, **commodity_status}
             )
         elif self.path == "/health":
-            if time.time() - lastUpdatedTime > 1200:
+            if time.time() - last_updated_time > 1200:
                 self.send_response(500)
-            else:
-                self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            return
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                return
         else:
             message = {"message": "Not Found"}
             response = json.dumps(message)
@@ -221,8 +219,8 @@ def update_status(symbols):
     with open(MAPPING[symbols][1], "w") as file:
         json.dump(MAPPING[symbols][0], file)
 
-    global lastUpdatedTime
-    lastUpdatedTime = time.time()
+    global last_updated_time
+    last_updated_time = time.time()
 
 
 if __name__ == "__main__":
