@@ -72,9 +72,11 @@ class apiHandler(http.server.BaseHTTPRequestHandler):
         elif self.path == "/health":
             if time.time() - last_updated_time > 1200:
                 self.send_response(500)
-                self.send_header("Content-type", "application/json")
-                self.end_headers()
-                return
+            else:
+                self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            return
         else:
             message = {"message": "Not Found"}
             response = json.dumps(message)
