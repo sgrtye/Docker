@@ -76,6 +76,7 @@ class apiHandler(http.server.BaseHTTPRequestHandler):
                 self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
+            return
         else:
             message = {"message": "Not Found"}
             response = json.dumps(message)
