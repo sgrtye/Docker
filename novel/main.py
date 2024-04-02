@@ -123,8 +123,10 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
         elif self.path == "/health":
             if time.time() - last_updated_time > loop_time:
                 self.send_response(500)
+                self.wfile.write(b"Delayed")
             else:
                 self.send_response(200)
+                self.wfile.write(b"OK")
             self.send_header("Content-type", "application/json")
             self.end_headers()
         else:
