@@ -138,7 +138,7 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
 
 
 def start_health_server():
-    with socketserver.TCPServer(("0.0.0.0", 8008), HealthCheckHandler) as httpd:
+    with socketserver.TCPServer(("0.0.0.0", 80), HealthCheckHandler) as httpd:
         httpd.serve_forever()
 
 

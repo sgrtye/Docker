@@ -89,7 +89,7 @@ class apiHandler(http.server.BaseHTTPRequestHandler):
 
 
 def start_api_server():
-    with socketserver.TCPServer(("0.0.0.0", 8888), apiHandler) as httpd:
+    with socketserver.TCPServer(("0.0.0.0", 80), apiHandler) as httpd:
         httpd.serve_forever()
 
 
