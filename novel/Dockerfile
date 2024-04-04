@@ -14,4 +14,7 @@ HEALTHCHECK --start-period=10s --interval=60s --timeout=3s CMD curl -f http://lo
 RUN mkdir /cache
 VOLUME /cache
 
+RUN mkdir /config
+VOLUME /config
+
 CMD ["python", "-u", "/app/main.py"]

@@ -9,81 +9,92 @@ import http.server
 import socketserver
 from lxml import etree
 
+IP_PATH = "/config/ip.txt"
+BOOK_PATH = "/config/book.txt"
 CACHE_PATH = "/cache/cache.json"
 
+PROXY_URL = os.environ.get("PROXY_URL")
 TELEBOT_TOKEN = os.environ.get("TELEBOT_TOKEN")
 TELEBOT_USER_ID = os.environ.get("TELEBOT_USER_ID")
-PROXY_URL = os.environ.get("PROXY_URL")
 
 if TELEBOT_TOKEN is None or TELEBOT_USER_ID is None or PROXY_URL is None:
     print("Environment variables not fulfilled")
 
-bot = telebot.TeleBot(TELEBOT_TOKEN)
-
-UNAVAILABLE_IPS = ["154.95.36.199"]
+titles, last_updated_time, loop_time = None, None, None
 
 
-proxies = []
+def load_unavailable_ips():
+    unavailable_ips = []
 
-try:
-    response = requests.get(PROXY_URL)
+    with open(IP_PATH, "r") as f:
+        lines = file.readlines()
 
-    if response.status_code == 200:
-        file_content = response.text
-        ip_list = file_content.strip().split("\n")
+    for line in lines:
+        unavailable_ips.append(line.strip())
 
-        for ip_entry in ip_list:
-            ip, port, username, password = ip_entry.rstrip("\r").split(":")
-            if ip not in UNAVAILABLE_IPS:
-                proxies.append((ip, port, username, password))
+    return unavailable_ips
 
-        if len(proxies) == 0:
-            raise Exception("No available proxy")
 
-    else:
-        raise Exception("Proxy server not responding")
+def load_proxies():
+    try:
+        response = requests.get(PROXY_URL)
 
-except Exception as e:
-    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
-    bot.send_message(TELEBOT_USER_ID, str(e))
-    raise SystemExit
+        if response.status_code == 200:
+            file_content = response.text
+            ip_list = file_content.strip().split("\n")
 
-print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Novel monitor started")
+            for ip_entry in ip_list:
+                ip, port, username, password = ip_entry.rstrip("\r").split(":")
+                if ip not in load_unavailable_ips():
+                    proxies.append((ip, port, username, password))
 
-books = [
-    ("46527", "乱世书"),
-    # ("35463", "稳住别浪"),
-    ("49991", "不许没收我的人籍"),
-    ("49986", "都重生了谁谈恋爱啊"),
-    ("53461", "趋吉避凶，从天师府开始"),
-    # ("43660", "这一世，我再也不渣青梅竹马了"),
-    ("50565", "我满级天师，你让我进规则怪谈？"),
-    ("55991", "大明：开局辞官退隐，老朱人麻了"),
-]
-i = 0
-j = 0
-last_updated_time = time.time()
-loop_time = len(books) * 5 * 60
-sleep_interval = loop_time / len(books)
+            if len(proxies) == 0:
+                raise Exception("No available proxy")
 
-titles = dict()
-if os.path.exists(CACHE_PATH):
-    with open(CACHE_PATH, "r") as file:
-        titles = json.load(file)
-        book_name = set(name for _, name in books)
-        book_name_previous = set(name + "previous" for _, name in books)
-        dict_copy = titles.copy()
-        for book in dict_copy.keys():
-            if book not in book_name and book not in book_name_previous:
-                del titles[book]
+        else:
+            raise Exception("Proxy server not responding")
 
-headers = {
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.8 Safari/537.36"
-}
+    except Exception as e:
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
+        bot.send_message(TELEBOT_USER_ID, str(e))
+        raise SystemExit
+
+
+def load_books():
+    books = []
+    with open(BOOK_PATH, "r") as file:
+        lines = file.readlines()
+
+    for line in lines:
+        if line.startswith("//"):
+            continue
+        number, name = line.strip().split(":")
+        books.append((number, name))
+
+    return books
+
+
+def load_cache():
+    titles = dict()
+
+    if os.path.exists(CACHE_PATH):
+        with open(CACHE_PATH, "r") as file:
+            titles = json.load(file)
+            book_name = set(name for _, name in books)
+            book_name_previous = set(name + "previous" for _, name in books)
+            dict_copy = titles.copy()
+            for book in dict_copy.keys():
+                if book not in book_name and book not in book_name_previous:
+                    del titles[book]
+
+    return titles
 
 
 def get_book_title(url, proxy=None):
     try:
+        headers = {
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.8 Safari/537.36"
+        }
         html = requests.get(
             url,
             headers=headers,
@@ -137,74 +148,94 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(b"Not Found")
 
 
-def start_health_server():
+def start_api_server():
     with socketserver.TCPServer(("0.0.0.0", 80), HealthCheckHandler) as httpd:
-        httpd.serve_forever()
+        server_thread = threading.Thread(target=httpd.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
 
 
-health_thread = threading.Thread(target=start_health_server)
-health_thread.daemon = True
-health_thread.start()
+if __name__ == "__main__":
+    bot = telebot.TeleBot(TELEBOT_TOKEN)
 
-try:
-    while True:
-        for index in range(len(proxies)):
-            j = (j + 1) % len(proxies)
+    proxies = load_proxies()
 
-            ip, port, username, password = proxies[j]
-            proxy = {
-                "http": f"http://{username}:{password}@{ip}:{port}",
-                "https": f"http://{username}:{password}@{ip}:{port}",
-            }
-
-            try:
-                url = f"https://www.69shu.pro/book/{books[i][0]}.htm"
-                title = get_book_title(url, proxy)
-
-                if title != titles.get(books[i][1]):
-                    if title == titles.get(books[i][1] + "previous"):
-                        break
-
-                    if title != get_book_title(url):
-                        break
-
-                    if titles.get(books[i][1]) is not None:
-                        bot.send_message(
-                            TELEBOT_USER_ID,
-                            f"{books[i][1]}\n'{titles.get(books[i][1])}'\n->'{title}'\n{url}",
-                        )
-
-                    titles[books[i][1] + "previous"] = titles.get(books[i][1])
-                    titles[books[i][1]] = title
-
-                    with open(CACHE_PATH, "w") as file:
-                        json.dump(titles, file)
-
-                break
-
-            except Exception as e:
-                print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
-                print(
-                    f"Error occurred when checking {books[i][1]} with proxy {ip}:{port}"
-                )
-                print(
-                    f"Error occurred during iteration {index} on line {e.__traceback__.tb_lineno}"
-                )
-                time.sleep(sleep_interval)
-                if index == len(proxies) - 1:
-                    raise e
-
-        last_updated_time = time.time()
-        time.sleep(sleep_interval)
-        i = (i + 1) % len(books)
-
-except Exception as e:
-    bot.send_message(TELEBOT_USER_ID, "Novel monitor encountered unexpected exception")
-    bot.send_message(
-        TELEBOT_USER_ID,
-        f"The exception occurred when processing book {books[i][1]} with error message: {str(e)}",
-    )
     print(
-        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "Error occurred, program terminated",
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Novel monitor started"
     )
+
+    books = load_books()
+    i = 0
+    j = 0
+    last_updated_time = time.time()
+    loop_time = len(books) * 5 * 60
+    sleep_interval = loop_time / len(books)
+
+    titles = load_cache()
+
+    start_api_server()
+
+    try:
+        while True:
+            for index in range(len(proxies)):
+                j = (j + 1) % len(proxies)
+
+                ip, port, username, password = proxies[j]
+                proxy = {
+                    "http": f"http://{username}:{password}@{ip}:{port}",
+                    "https": f"http://{username}:{password}@{ip}:{port}",
+                }
+
+                try:
+                    url = f"https://www.69shu.pro/book/{books[i][0]}.htm"
+                    title = get_book_title(url, proxy)
+
+                    if title != titles.get(books[i][1]):
+                        if title == titles.get(books[i][1] + "previous"):
+                            break
+
+                        if title != get_book_title(url):
+                            break
+
+                        if titles.get(books[i][1]) is not None:
+                            bot.send_message(
+                                TELEBOT_USER_ID,
+                                f"{books[i][1]}\n'{titles.get(books[i][1])}'\n->'{title}'\n{url}",
+                            )
+
+                        titles[books[i][1] + "previous"] = titles.get(books[i][1])
+                        titles[books[i][1]] = title
+
+                        with open(CACHE_PATH, "w") as file:
+                            json.dump(titles, file)
+
+                    break
+
+                except Exception as e:
+                    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
+                    print(
+                        f"Error occurred when checking {books[i][1]} with proxy {ip}:{port}"
+                    )
+                    print(
+                        f"Error occurred during iteration {index} on line {e.__traceback__.tb_lineno}"
+                    )
+                    time.sleep(sleep_interval)
+                    if index == len(proxies) - 1:
+                        raise e
+
+            last_updated_time = time.time()
+            time.sleep(sleep_interval)
+            i = (i + 1) % len(books)
+
+    except Exception as e:
+        bot.send_message(
+            TELEBOT_USER_ID, "Novel monitor encountered unexpected exception"
+        )
+        bot.send_message(
+            TELEBOT_USER_ID,
+            f"The exception occurred when processing book {books[i][1]} with error message: {str(e)}",
+        )
+        print(
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Error occurred, program terminated",
+        )
