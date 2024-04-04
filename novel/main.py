@@ -155,6 +155,7 @@ def start_api_server():
     with socketserver.TCPServer(("0.0.0.0", 80), HealthCheckHandler) as httpd:
         httpd.serve_forever()
 
+
 if __name__ == "__main__":
     bot = telebot.TeleBot(TELEBOT_TOKEN)
 
@@ -173,8 +174,6 @@ if __name__ == "__main__":
     api_thread.daemon = True
     api_thread.start()
 
-    print(books)
-    print(proxies)
     print(
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Novel monitor started"
     )
