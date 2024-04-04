@@ -26,7 +26,7 @@ titles, last_updated_time, loop_time = None, None, None
 def load_unavailable_ips():
     unavailable_ips = []
 
-    with open(IP_PATH, "r") as f:
+    with open(IP_PATH, "r") as file:
         lines = file.readlines()
 
     for line in lines:
