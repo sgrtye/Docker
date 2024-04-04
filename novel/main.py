@@ -37,6 +37,7 @@ def load_unavailable_ips():
 
 def load_proxies():
     try:
+        proxies = []
         response = requests.get(PROXY_URL)
 
         if response.status_code == 200:
@@ -53,6 +54,8 @@ def load_proxies():
 
         else:
             raise Exception("Proxy server not responding")
+    
+        return proxies
 
     except Exception as e:
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
