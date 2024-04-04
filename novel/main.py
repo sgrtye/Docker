@@ -153,10 +153,7 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
 
 def start_api_server():
     with socketserver.TCPServer(("0.0.0.0", 80), HealthCheckHandler) as httpd:
-        server_thread = threading.Thread(target=httpd.serve_forever)
-        server_thread.daemon = True
-        server_thread.start()
-
+        httpd.serve_forever()
 
 if __name__ == "__main__":
     bot = telebot.TeleBot(TELEBOT_TOKEN)
@@ -172,7 +169,9 @@ if __name__ == "__main__":
 
     titles = load_cache()
 
-    start_api_server()
+    api_thread = threading.Thread(target=start_api_server)
+    api_thread.daemon = True
+    api_thread.start()
 
     print(books)
     print(proxies)
