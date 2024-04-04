@@ -54,7 +54,7 @@ def load_proxies():
 
         else:
             raise Exception("Proxy server not responding")
-    
+
         return proxies
 
     except Exception as e:
@@ -163,10 +163,6 @@ if __name__ == "__main__":
 
     proxies = load_proxies()
 
-    print(
-        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Novel monitor started"
-    )
-
     books = load_books()
     i = 0
     j = 0
@@ -177,6 +173,12 @@ if __name__ == "__main__":
     titles = load_cache()
 
     start_api_server()
+
+    print(books)
+    print(proxies)
+    print(
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Novel monitor started"
+    )
 
     try:
         while True:
