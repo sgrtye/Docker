@@ -10,6 +10,7 @@ DIRECTORY_PATH = "/sub"
 LOCATION_DICT = {
     "dalian": "大连",
     "foshan": "佛山",
+    "default": "默认",
     "tianjin": "天津",
     "jinghai": "静海",
     "beijing": "北京",
