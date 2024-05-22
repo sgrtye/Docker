@@ -178,7 +178,7 @@ def update_xui_status():
 
 
 def get_ticker_prices(symbol):
-    info = tickers.tickers[symbol].history(period="3d", interval="60m")
+    info = tickers.tickers[symbol].history(period="5d", interval="60m")
 
     latest_time = info.index.max()
     current_price = info.loc[latest_time]["Close"]
