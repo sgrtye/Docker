@@ -205,6 +205,9 @@ def get_info_by_ticker(tickers):
             trend = ((price - old_price) / old_price) * 100
             info[ticker] = format_number(price)
             info[ticker + "_TREND"] = format_number(trend)
+
+        global last_updated_time
+        last_updated_time = time.time()
     except Exception as e:
         print(
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -220,9 +223,6 @@ def update_status(symbols):
     MAPPING[symbols][0].update(info)
     with open(MAPPING[symbols][1], "w") as file:
         json.dump(MAPPING[symbols][0], file)
-
-    global last_updated_time
-    last_updated_time = time.time()
 
 
 if __name__ == "__main__":
