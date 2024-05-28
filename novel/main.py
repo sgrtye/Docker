@@ -58,8 +58,8 @@ def load_proxies():
         return proxies
 
     except Exception as e:
-        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
-        bot.send_message(TELEBOT_USER_ID, str(e))
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
+        bot.send_message(TELEBOT_USER_ID, repr(e))
         raise SystemExit
 
 
@@ -215,7 +215,7 @@ if __name__ == "__main__":
                     break
 
                 except Exception as e:
-                    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
+                    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
                     print(
                         f"Error occurred when checking {books[i][1]} with proxy {ip}:{port}"
                     )
@@ -236,7 +236,7 @@ if __name__ == "__main__":
         )
         bot.send_message(
             TELEBOT_USER_ID,
-            f"The exception occurred when processing book {books[i][1]} with error message: {str(e)}",
+            f"The exception occurred when processing book {books[i][1]} with error message: {repr(e)}",
         )
         print(
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

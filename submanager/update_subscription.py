@@ -237,7 +237,7 @@ def update():
         update_client_config(locations, providers, credentials)
 
     except Exception as e:
-        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
         print(f"Error occurred on line {e.__traceback__.tb_lineno}")
 
 

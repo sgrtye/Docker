@@ -37,7 +37,7 @@ def remove_old_client_config():
                 "Old client config files removed",
             )
     except Exception as e:
-        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e))
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
         print(f"Error occurred on line {e.__traceback__.tb_lineno}")
 
 
