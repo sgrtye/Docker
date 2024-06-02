@@ -190,7 +190,7 @@ if __name__ == "__main__":
                 }
 
                 try:
-                    url = f"https://www.69shu.pro/book/{books[i][0]}.htm"
+                    url = f"https://www.69shuba.pro/book/{books[i][0]}.htm"
                     title = get_book_title(url, proxy)
 
                     if title != titles.get(books[i][1]):
