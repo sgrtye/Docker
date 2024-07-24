@@ -157,8 +157,6 @@ def get_xui_status():
     online = online.json()
 
     info = {
-        "up": bytes_to_speed(status["obj"]["netIO"]["up"]),
-        "down": bytes_to_speed(status["obj"]["netIO"]["down"]),
         "speed": bytes_to_speed(status["obj"]["netIO"]["down"]),
         "usage": format_bytes(status["obj"]["netTraffic"]["recv"]),
         "online": random.choice(online["obj"]) if online["obj"] else "-",
@@ -169,8 +167,6 @@ def get_xui_status():
 def update_xui_status():
     global xui_status
     xui_status = {
-        "up": 0,
-        "down": 0,
         "speed": 0,
         "usage": 0,
         "online": 0,
