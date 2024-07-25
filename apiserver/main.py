@@ -159,7 +159,7 @@ def get_xui_status():
     info = {
         "speed": bytes_to_speed(status["obj"]["netIO"]["down"]),
         "usage": format_bytes(status["obj"]["netTraffic"]["recv"]),
-        "online": random.choice(online["obj"]) if online["obj"] else "-",
+        "online": f"{random.choice(online["obj"])} ({len(online["obj"])})" if online["obj"] else "-",
     }
     return info
 
@@ -169,7 +169,7 @@ def update_xui_status():
     xui_status = {
         "speed": 0,
         "usage": 0,
-        "online": 0,
+        "online": "-",
     }
 
     xui_status.update(get_xui_status())
