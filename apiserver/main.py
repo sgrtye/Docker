@@ -156,10 +156,17 @@ def get_xui_status():
     status = status.json()
     online = online.json()
 
+    online_count = len(online["obj"])
+    online_name = (
+        random.choice(online["obj"]) if online_count > 1 else (online["obj"] + ["-"])[0]
+    )
+
     info = {
         "speed": bytes_to_speed(status["obj"]["netIO"]["down"]),
         "usage": format_bytes(status["obj"]["netTraffic"]["recv"]),
-        "online": f"{random.choice(online["obj"])} ({len(online["obj"])})" if online["obj"] else "-",
+        "online": (
+            f"{online_name} ({online_count})" if online_count > 1 else online_name
+        ),
     }
     return info
 
