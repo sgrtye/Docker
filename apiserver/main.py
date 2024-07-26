@@ -156,7 +156,7 @@ def get_xui_status():
     status = status.json()
     online = online.json()
 
-    online_count = len(online["obj"])
+    online_count = len(online["obj"]) if online["obj"] else 0
     online_name = (
         random.choice(online["obj"]) if online_count > 1 else (online["obj"] + ["-"])[0]
     )
