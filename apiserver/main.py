@@ -160,7 +160,7 @@ def get_xui_status():
     online_name = random.choice(online["obj"]) if online_count > 0 else "-"
 
     info = {
-        "speed": bytes_to_speed(status["obj"]["netIO"]["down"]),
+        "speed": bytes_to_speed(status["obj"]["netIO"]["up"]),
         "usage": format_bytes(status["obj"]["netTraffic"]["recv"]),
         "online": (
             f"{online_name} ({online_count})" if online_count > 1 else online_name
