@@ -161,7 +161,7 @@ def get_xui_status():
 
     info = {
         "speed": bytes_to_speed(status["obj"]["netIO"]["up"]),
-        "usage": format_bytes(status["obj"]["netTraffic"]["recv"]),
+        "usage": format_bytes(status["obj"]["netTraffic"]["sent"]),
         "online": (
             f"{online_name} ({online_count})" if online_count > 1 else online_name
         ),
