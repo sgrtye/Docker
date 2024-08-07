@@ -8,8 +8,8 @@ on:
 
 jobs:
   Novel:
-    runs-on: ${{ vars.SYSTEM }}
-    timeout-minutes: ${{ fromJSON(vars.TIMEOUT) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
