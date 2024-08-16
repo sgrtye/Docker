@@ -242,7 +242,7 @@ def update_mitce_config(credentials):
         save_path = os.path.join(DIRECTORY_PATH, "conf", rf"{name}-{path}/config.yaml")
 
         with open(save_path, "w", encoding="utf-8") as file:
-            file.write(config_file.content)
+            file.write(config_file.text)
 
     print(
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
