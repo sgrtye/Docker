@@ -26,7 +26,15 @@ XUI_PASSWORD = os.environ.get("XUI_PASSWORD")
 XUI_URL = os.environ.get("XUI_URL")
 HOST_URL = os.environ.get("HOST_URL")
 
-if XUI_URL is None or HOST_URL is None or XUI_USERNAME is None or XUI_PASSWORD is None:
+MITCE_URL = os.environ.get("MITCE_URL")
+
+if (
+    XUI_URL is None
+    or HOST_URL is None
+    or XUI_USERNAME is None
+    or XUI_PASSWORD is None
+    or MITCE_URL is None
+):
     print("Environment variables not fulfilled")
 
 
@@ -221,6 +229,27 @@ def update_client_config(locations, providers, credentials):
     )
 
 
+def update_mitce_config(credentials):
+    config_file = requests.get(MITCE_URL)
+
+    if config_file.status_code != 200:
+        raise Exception("Mitce file fetch error")
+
+    for client in credentials:
+        name = client["name"]
+        path = client["path"]
+
+        save_path = os.path.join(DIRECTORY_PATH, "conf", rf"{name}-{path}/config.yaml")
+
+        with open(save_path, "w", encoding="utf-8") as file:
+            file.write(config_file.content)
+
+    print(
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "New mitce config files fetched",
+    )
+
+
 def update():
     try:
         locations = get_location_ip()
@@ -235,6 +264,18 @@ def update():
             raise Exception("No credentials available")
 
         update_client_config(locations, providers, credentials)
+
+    except Exception as e:
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
+        print(f"Error occurred on line {e.__traceback__.tb_lineno}")
+
+    try:
+        credentials = get_credentials()
+
+        if credentials is None:
+            raise Exception("No credentials available")
+
+        update_mitce_config(credentials)
 
     except Exception as e:
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
