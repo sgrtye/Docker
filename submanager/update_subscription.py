@@ -200,7 +200,7 @@ def update_client_config(locations, providers, credentials):
         )
         generate_check_config(locations, providers, uuid, host, path, save_path)
 
-        break
+        continue
 
         selected_ips = get_selected_ip()
 
@@ -242,6 +242,7 @@ def update_mitce_config(credentials):
         path = client["path"]
 
         save_path = os.path.join(DIRECTORY_PATH, "conf", rf"{name}-{path}/config.yaml")
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
         with open(save_path, "w", encoding="utf-8") as file:
             file.write(config_file.text)
