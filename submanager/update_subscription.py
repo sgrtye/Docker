@@ -200,6 +200,8 @@ def update_client_config(locations, providers, credentials):
         )
         generate_check_config(locations, providers, uuid, host, path, save_path)
 
+        break
+
         selected_ips = get_selected_ip()
 
         if selected_ips is None:
