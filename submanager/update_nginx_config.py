@@ -1,7 +1,5 @@
 import os
 import json
-import random
-import string
 import requests
 import datetime
 
@@ -29,11 +27,11 @@ def get_credentials():
 
     results = []
     for inbound in response.json()["obj"]:
-        client = {
+        info = {
             "port": str(inbound["port"]),
             "path": json.loads(inbound["streamSettings"])["wsSettings"]["path"][1:],
         }
-        results.append(client)
+        results.append(info)
 
     return results
 
