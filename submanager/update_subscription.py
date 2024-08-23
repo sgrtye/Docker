@@ -50,20 +50,24 @@ def get_credentials():
 
     results = []
     for inbound in response.json()["obj"]:
-        uuid = json.loads(inbound["settings"])["clients"][0]["id"]
-        client = {
-            "name": inbound["remark"],
-            "uuid": uuid,
-            "host": "".join(
-                random.choice(string.ascii_lowercase)
-                for _ in range(random.randint(10, 15))
+        for client in json.loads(inbound["settings"])["clients"]:
+            host = (
+                "".join(
+                    random.choice(string.ascii_lowercase)
+                    for _ in range(random.randint(5, 10))
+                )
+                + "."
+                + HOST_URL
             )
-            + "."
-            + HOST_URL,
-            "port": str(inbound["port"]),
-            "path": json.loads(inbound["streamSettings"])["wsSettings"]["path"][1:],
-        }
-        results.append(client)
+
+            result = {
+                "name": client["email"],
+                "uuid": client["id"],
+                "host": host,
+                "port": str(inbound["port"]),
+                "path": json.loads(inbound["streamSettings"])["wsSettings"]["path"][1:],
+            }
+            results.append(result)
 
     return results
 
@@ -196,7 +200,7 @@ def update_client_config(locations, providers, credentials):
         )
 
         save_path = os.path.join(
-            DIRECTORY_PATH, "conf", rf"{name}-{path}/china/config.yaml"
+            DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:14]}/china/config.yaml"
         )
         generate_check_config(locations, providers, uuid, host, path, save_path)
 
@@ -221,7 +225,7 @@ def update_client_config(locations, providers, credentials):
                 }
                 config_path = os.path.join(DIRECTORY_PATH, "file", "config.yaml")
                 save_path = os.path.join(
-                    DIRECTORY_PATH, "conf", rf"{name}-{path}/{loc}/{pro}/config.yaml"
+                    DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:14]}/{loc}/{pro}/config.yaml"
                 )
                 generate_config(servers, uuid, host, path, config_path, save_path)
 
@@ -239,9 +243,9 @@ def update_mitce_config(credentials):
 
     for client in credentials:
         name = client["name"]
-        path = client["path"]
+        uuid = client["uuid"]
 
-        save_path = os.path.join(DIRECTORY_PATH, "conf", rf"{name}-{path}/config.yaml")
+        save_path = os.path.join(DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:14]}/config.yaml")
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
         with open(save_path, "w", encoding="utf-8") as file:

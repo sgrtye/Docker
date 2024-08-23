@@ -12,9 +12,8 @@ XUI_USERNAME = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD = os.environ.get("XUI_PASSWORD")
 
 XUI_URL = os.environ.get("XUI_URL")
-HOST_URL = os.environ.get("HOST_URL")
 
-if XUI_URL is None or HOST_URL is None or XUI_USERNAME is None or XUI_PASSWORD is None:
+if XUI_URL is None is None or XUI_USERNAME is None or XUI_PASSWORD is None:
     print("Environment variables not fulfilled")
 
 
@@ -30,16 +29,7 @@ def get_credentials():
 
     results = []
     for inbound in response.json()["obj"]:
-        uuid = json.loads(inbound["settings"])["clients"][0]["id"]
         client = {
-            "name": inbound["remark"],
-            "uuid": uuid,
-            "host": "".join(
-                random.choice(string.ascii_lowercase)
-                for _ in range(random.randint(10, 15))
-            )
-            + "."
-            + HOST_URL,
             "port": str(inbound["port"]),
             "path": json.loads(inbound["streamSettings"])["wsSettings"]["path"][1:],
         }
