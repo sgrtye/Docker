@@ -197,6 +197,7 @@ if __name__ == "__main__":
 
                 try:
                     url = BOOK_URL.replace('BOOK_URL', books[i][0])
+                    print(url)
                     title = get_book_title(url, proxy)
 
                     if title != titles.get(books[i][1]):
