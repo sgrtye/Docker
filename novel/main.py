@@ -73,13 +73,11 @@ def load_books():
     books = []
     with open(BOOK_PATH, "r") as file:
         lines = file.readlines()
-
     for line in lines:
         if line.startswith("//"):
             continue
         number, name = line.strip().split(":")
         books.append((number, name))
-
     return books
 
 
@@ -196,8 +194,7 @@ if __name__ == "__main__":
                 }
 
                 try:
-                    url = BOOK_URL.replace('BOOK_URL', books[i][0])
-                    print(url)
+                    url = BOOK_URL.replace('BOOK_ID', books[i][0])
                     title = get_book_title(url, proxy)
 
                     if title != titles.get(books[i][1]):
