@@ -13,11 +13,17 @@ IP_PATH = "/config/ip.txt"
 BOOK_PATH = "/config/book.txt"
 CACHE_PATH = "/cache/cache.json"
 
+BOOK_URL = os.environ.get("BOOK_URL")
 PROXY_URL = os.environ.get("PROXY_URL")
 TELEBOT_TOKEN = os.environ.get("TELEBOT_TOKEN")
 TELEBOT_USER_ID = os.environ.get("TELEBOT_USER_ID")
 
-if TELEBOT_TOKEN is None or TELEBOT_USER_ID is None or PROXY_URL is None:
+if (
+    TELEBOT_TOKEN is None
+    or TELEBOT_USER_ID is None
+    or BOOK_URL is None
+    or PROXY_URL is None
+):
     print("Environment variables not fulfilled")
 
 titles, last_updated_time, loop_time = None, None, None
@@ -190,7 +196,7 @@ if __name__ == "__main__":
                 }
 
                 try:
-                    url = f"https://69shu.me/book/{books[i][0]}.htm"
+                    url = BOOK_URL.replace('BOOK_URL', books[i][0])
                     title = get_book_title(url, proxy)
 
                     if title != titles.get(books[i][1]):
@@ -215,7 +221,9 @@ if __name__ == "__main__":
                     break
 
                 except Exception as e:
-                    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
+                    print(
+                        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e)
+                    )
                     print(
                         f"Error occurred when checking {books[i][1]} with proxy {ip}:{port}"
                     )
