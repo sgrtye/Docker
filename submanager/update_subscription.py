@@ -140,14 +140,22 @@ def get_location_ip():
     return locations
 
 
-def generate_config_line(name, server_ip):
+def generate_ip_config_line(name, server_ip):
     line = (
-        "\n"
-        + '  - {"name":"'
+        '\n  - {"name":"'
         + f"{name}"
         + '","type":"vless","server":"'
         + f"{server_ip}"
         + '","port":443,"uuid":"UUID_FULL","tls":true,"servername":"HOST_ADDRESS","network":"ws","ws-opts":{"path":"/CLIENT_PATH","headers":{"host":"HOST_ADDRESS"}},"client-fingerprint":"chrome"}'
+    )
+    return line
+
+
+def generate_hostname_config_line(name):
+    line = (
+        '\n  - {"name":"'
+        + f"{name}"
+        + '","type":"vless","server":"HOST_ADDRESS","port":443,"uuid":"UUID_FULL","tls":true,"network":"ws","ws-opts":{"path":"/CLIENT_PATH"},"client-fingerprint":"chrome"}'
     )
     return line
 
@@ -176,11 +184,15 @@ def generate_check_config(locations, providers, uuid, host, path, save_path):
     for loc, loc_value in locations.items():
         for name, server_ip in loc_value.items():
             name = LOCATION_DICT.get(loc, loc) + name[0:2] + name[4:5]
-            config_content = config_content + generate_config_line(name, server_ip)
+            config_content = config_content + generate_ip_config_line(name, server_ip)
 
     for pro, pro_value in providers.items():
         for name, server_ip in pro_value.items():
-            config_content = config_content + generate_config_line(name[0:5], server_ip)
+            config_content = config_content + generate_ip_config_line(
+                name[0:5], server_ip
+            )
+
+    config_content = config_content + generate_hostname_config_line("Beelink")
 
     config_content = config_content.replace("UUID_FULL", uuid)
     config_content = config_content.replace("CLIENT_PATH", path)
@@ -225,7 +237,9 @@ def update_client_config(locations, providers, credentials):
                 }
                 config_path = os.path.join(DIRECTORY_PATH, "file", "config.yaml")
                 save_path = os.path.join(
-                    DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:13]}/{loc}/{pro}/config.yaml"
+                    DIRECTORY_PATH,
+                    "conf",
+                    rf"{name}-{uuid[0:13]}/{loc}/{pro}/config.yaml",
                 )
                 generate_config(servers, uuid, host, path, config_path, save_path)
 
@@ -245,7 +259,9 @@ def update_mitce_config(credentials):
         name = client["name"]
         uuid = client["uuid"]
 
-        save_path = os.path.join(DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:13]}/config.yaml")
+        save_path = os.path.join(
+            DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:13]}/config.yaml"
+        )
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
         with open(save_path, "w", encoding="utf-8") as file:
