@@ -250,7 +250,7 @@ def update_client_config(locations, providers, credentials):
 
 
 def update_mitce_config(credentials):
-    config_file = requests.get(MITCE_URL)
+    config_file = requests.get(MITCE_URL, headers = {'User-agent': 'clash-verge/1.5.0'})
 
     if config_file.status_code != 200:
         raise Exception("Mitce file fetch error")
