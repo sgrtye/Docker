@@ -1,13 +1,13 @@
-FROM python:3.12-alpine
+FROM mcr.microsoft.com/playwright/python:jammy
 
 ENV TZ=Europe/London
 
 COPY . /app
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-RUN pyarmor gen --output /app /app/main.py
+RUN playwright install chromium
 
-RUN apk --update --no-cache add curl chromium
+RUN pyarmor gen --output /app /app/main.py
 
 HEALTHCHECK --start-period=10s --interval=60s --timeout=3s CMD curl -f http://localhost:80/health || exit 1
 
