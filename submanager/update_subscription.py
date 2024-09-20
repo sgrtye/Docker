@@ -20,6 +20,11 @@ LOCATION_DICT = {
     "shijiazhuang": "石家庄",
 }
 
+AGENTS = [
+    ("clash-verge/1.8.0", "clash.yaml"),
+    ("shadowrocket/2.2.50", "shadowrocket"),
+]
+
 XUI_USERNAME = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD = os.environ.get("XUI_PASSWORD")
 
@@ -250,44 +255,26 @@ def update_client_config(locations, providers, credentials):
 
 
 def update_mitce_config(credentials):
-    config_file_clash = requests.get(
-        MITCE_URL, headers={"User-agent": "clash-verge/1.8.0"}
-    )
-    config_file_shadowrocket = requests.get(
-        MITCE_URL, headers={"User-agent": "shadowrocket/2.2.50"}
-    )
+    for user_agent, file_name in AGENTS:
+        config_file = requests.get(MITCE_URL, headers={"User-agent": user_agent})
 
-    if (
-        config_file_clash.status_code != 200
-        or config_file_shadowrocket.status_code != 200
-    ):
-        raise Exception("Mitce file fetch error")
+        if config_file.status_code != 200:
+            raise Exception(f"Mitce file fetch error with agent {user_agent}")
 
-    save_path_clash = os.path.join(DIRECTORY_PATH, r"conf/mitce/clash.yaml")
-    os.makedirs(os.path.dirname(save_path_clash), exist_ok=True)
-    with open(save_path_clash, "w", encoding="utf-8") as file:
-        file.write(config_file_clash.text)
+        global_save_path = os.path.join(DIRECTORY_PATH, r"conf/mitce", file_name)
+        os.makedirs(os.path.dirname(global_save_path), exist_ok=True)
+        with open(global_save_path, "w", encoding="utf-8") as file:
+            file.write(config_file.text)
 
-    save_path_shadowrocket = os.path.join(DIRECTORY_PATH, r"conf/mitce/shadowrocket")
-    os.makedirs(os.path.dirname(save_path_shadowrocket), exist_ok=True)
-    with open(save_path_shadowrocket, "w", encoding="utf-8") as file:
-        file.write(config_file_shadowrocket.text)
+        for client in credentials:
+            name = client["name"]
+            uuid = client["uuid"]
 
-    for client in credentials:
-        name = client["name"]
-        uuid = client["uuid"]
-
-        save_path = os.path.join(
-            DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:13]}/clash.yaml"
-        )
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        os.link(save_path_clash, save_path)
-
-        save_path = os.path.join(
-            DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:13]}/shadowrocket"
-        )
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        os.link(save_path_shadowrocket, save_path)
+            save_path = os.path.join(
+                DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:13]}", file_name
+            )
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            os.link(global_save_path, save_path)
 
     print(
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
