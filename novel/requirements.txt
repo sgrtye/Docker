@@ -1,4 +1,6 @@
 lxml
 pyarmor
+selenium
 requests
+selenium-wire
 pyTelegramBotAPI
