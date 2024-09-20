@@ -212,7 +212,7 @@ def update_client_config(locations, providers, credentials):
         )
 
         save_path = os.path.join(
-            DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:13]}/china/config.yaml"
+            DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:13]}/china/clash.yaml"
         )
         generate_check_config(locations, providers, uuid, host, path, save_path)
 
@@ -239,7 +239,7 @@ def update_client_config(locations, providers, credentials):
                 save_path = os.path.join(
                     DIRECTORY_PATH,
                     "conf",
-                    rf"{name}-{uuid[0:13]}/{loc}/{pro}/config.yaml",
+                    rf"{name}-{uuid[0:13]}/{loc}/{pro}/clash.yaml",
                 )
                 generate_config(servers, uuid, host, path, config_path, save_path)
 
