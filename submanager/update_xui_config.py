@@ -67,6 +67,7 @@ def update_config(locations, providers, credentials):
 
 def update():
     try:
+        return
         locations = get_location_ip()
         providers = get_provider_ip()
         credentials = get_credentials()
