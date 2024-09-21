@@ -1,8 +1,8 @@
 import os
 import shutil
 import datetime
-from config import DIRECTORY_PATH
-from xui_credentials import get_credentials
+from submanager.config import DIRECTORY_PATH
+from submanager.utilities import get_credentials
 
 
 def remove_old_client_config():
