@@ -8,6 +8,7 @@ import threading
 import http.server
 import socketserver
 from lxml import etree
+from playwright_stealth import stealth_sync
 from playwright.sync_api import sync_playwright
 
 IP_PATH = "/config/ip.txt"
@@ -116,6 +117,7 @@ def get_book_title(url, proxy=None):
             else:
                 page = browser.new_page()
 
+            stealth_sync(page)
             page.goto(url)
             html = page.content()
             print(html)

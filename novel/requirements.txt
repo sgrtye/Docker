@@ -3,3 +3,4 @@ pyarmor
 requests
 playwright
 pyTelegramBotAPI
+playwright_stealth
