@@ -8,6 +8,7 @@ import threading
 import http.server
 import socketserver
 from lxml import etree
+from playwright.sync_api import sync_playwright
 
 IP_PATH = "/config/ip.txt"
 BOOK_PATH = "/config/book.txt"
@@ -99,16 +100,27 @@ def load_cache():
 
 def get_book_title(url, proxy=None):
     try:
-        headers = {
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.8 Safari/537.36"
-        }
-        html = requests.get(
-            url,
-            headers=headers,
-            proxies=proxy,
-        )
-        html.encoding = "gbk"
-        tree = etree.HTML(html.text, parser=None)
+        with sync_playwright() as p:
+            browser = p.webkit.launch()
+
+            if proxy:
+                ip, port, username, password = proxy
+                context = browser.new_context(
+                    proxy={
+                        "server": f"{ip}:{port}",
+                        "username": username,
+                        "password": password,
+                    }
+                )
+                page = context.new_page()
+            else:
+                page = browser.new_page()
+
+            page.goto(url)
+            html = page.content()
+            browser.close()
+
+        tree = etree.HTML(html, parser=None)
 
         div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
         span_element = div_element.xpath("./ul/li[1]/a/span")[0]
@@ -188,14 +200,10 @@ if __name__ == "__main__":
                 j = (j + 1) % len(proxies)
 
                 ip, port, username, password = proxies[j]
-                proxy = {
-                    "http": f"http://{username}:{password}@{ip}:{port}",
-                    "https": f"http://{username}:{password}@{ip}:{port}",
-                }
 
                 try:
-                    url = BOOK_URL.replace('BOOK_ID', books[i][0])
-                    title = get_book_title(url, proxy)
+                    url = BOOK_URL.replace("BOOK_ID", books[i][0])
+                    title = get_book_title(url, proxies[j])
 
                     if title != titles.get(books[i][1]):
                         if title == titles.get(books[i][1] + "previous"):
