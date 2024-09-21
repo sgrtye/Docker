@@ -1,7 +1,7 @@
 import os
 import datetime
-from submanager.config import AGENTS, DIRECTORY_PATH
-from submanager.utilities import (
+from config import AGENTS, DIRECTORY_PATH
+from utilities import (
     get_credentials,
     get_provider_ip,
     get_location_ip,

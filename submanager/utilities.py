@@ -3,7 +3,7 @@ import json
 import random
 import string
 import requests
-from submanager.config import DIRECTORY_PATH
+from config import DIRECTORY_PATH
 
 XUI_URL = os.environ.get("XUI_URL")
 HOST_DOMAIN = os.environ.get("HOST_DOMAIN")

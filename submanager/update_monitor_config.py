@@ -1,7 +1,7 @@
 import os
 import datetime
-from submanager.config import LOCATION_DICT, DIRECTORY_PATH
-from submanager.utilities import get_credentials, get_provider_ip, get_location_ip
+from config import LOCATION_DICT, DIRECTORY_PATH
+from utilities import get_credentials, get_provider_ip, get_location_ip
 
 
 def generate_ip_config_line(name, server_ip):

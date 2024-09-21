@@ -1,7 +1,7 @@
 import os
 import datetime
-from submanager.config import DIRECTORY_PATH, NGINX_PATH
-from submanager.utilities import get_credentials
+from config import DIRECTORY_PATH, NGINX_PATH
+from utilities import get_credentials
 
 
 def update_nginx_config(credentials):
