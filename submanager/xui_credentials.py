@@ -5,11 +5,11 @@ import string
 import requests
 
 XUI_URL = os.environ.get("XUI_URL")
-HOST_URL = os.environ.get("HOST_URL")
+HOST_DOMAIN = os.environ.get("HOST_DOMAIN")
 XUI_USERNAME = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD = os.environ.get("XUI_PASSWORD")
 
-if XUI_URL is None or HOST_URL is None or XUI_USERNAME is None or XUI_PASSWORD is None:
+if XUI_URL is None or HOST_DOMAIN is None or XUI_USERNAME is None or XUI_PASSWORD is None:
     raise Exception("Environment variables not fulfilled")
 
 
@@ -33,7 +33,7 @@ def get_credentials():
                     for _ in range(random.randint(5, 10))
                 )
                 + "."
-                + HOST_URL
+                + HOST_DOMAIN
             )
 
             info = {
