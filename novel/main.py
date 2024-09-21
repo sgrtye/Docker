@@ -119,6 +119,7 @@ def get_book_title(url, proxy=None):
 
             stealth_sync(page)
             page.goto(url)
+            page.wait_for_load_state("domcontentloaded")
             html = page.content()
             print(html)
             browser.close()
