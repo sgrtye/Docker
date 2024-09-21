@@ -1,9 +1,7 @@
 import os
-import json
-import random
-import string
 import requests
 import datetime
+from xui_credentials import get_credentials
 
 DIRECTORY_PATH = "/sub"
 
@@ -25,56 +23,10 @@ AGENTS = [
     ("shadowrocket/2.2.50", "shadowrocket"),
 ]
 
-XUI_USERNAME = os.environ.get("XUI_USERNAME")
-XUI_PASSWORD = os.environ.get("XUI_PASSWORD")
-
-XUI_URL = os.environ.get("XUI_URL")
-HOST_URL = os.environ.get("HOST_URL")
-
 MITCE_URL = os.environ.get("MITCE_URL")
 
-if (
-    XUI_URL is None
-    or HOST_URL is None
-    or XUI_USERNAME is None
-    or XUI_PASSWORD is None
-    or MITCE_URL is None
-):
+if MITCE_URL is None:
     print("Environment variables not fulfilled")
-
-
-def get_credentials():
-    session = requests.Session()
-    session.post(
-        XUI_URL + "/login", data={"username": XUI_USERNAME, "password": XUI_PASSWORD}
-    )
-    response = session.post(XUI_URL + "/panel/inbound/list")
-
-    if response.status_code != 200:
-        return None
-
-    results = []
-    for inbound in response.json()["obj"]:
-        for client in json.loads(inbound["settings"])["clients"]:
-            host = (
-                "".join(
-                    random.choice(string.ascii_lowercase)
-                    for _ in range(random.randint(5, 10))
-                )
-                + "."
-                + HOST_URL
-            )
-
-            info = {
-                "name": client["email"],
-                "uuid": client["id"],
-                "host": host,
-                "port": str(inbound["port"]),
-                "path": json.loads(inbound["streamSettings"])["wsSettings"]["path"][1:],
-            }
-            results.append(info)
-
-    return results
 
 
 def get_provider_ip():
