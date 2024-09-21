@@ -118,6 +118,7 @@ def get_book_title(url, proxy=None):
 
             page.goto(url)
             html = page.content()
+            print(html)
             browser.close()
 
         tree = etree.HTML(html, parser=None)
