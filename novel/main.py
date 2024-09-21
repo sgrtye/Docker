@@ -8,8 +8,6 @@ import http.server
 import socketserver
 from lxml import etree
 from curl_cffi import requests
-from playwright_stealth import stealth_sync
-from playwright.sync_api import sync_playwright
 
 IP_PATH = "/config/ip.txt"
 BOOK_PATH = "/config/book.txt"
@@ -101,29 +99,6 @@ def load_cache():
 
 def get_book_title(url, proxy=None):
     try:
-        # with sync_playwright() as p:
-        #     browser = p.webkit.launch()
-
-        #     if proxy:
-        #         ip, port, username, password = proxy
-        #         context = browser.new_context(
-        #             proxy={
-        #                 "server": f"{ip}:{port}",
-        #                 "username": username,
-        #                 "password": password,
-        #             }
-        #         )
-        #         page = context.new_page()
-        #     else:
-        #         page = browser.new_page()
-
-        #     stealth_sync(page)
-        #     page.goto(url)
-        #     page.wait_for_load_state("domcontentloaded")
-        #     html = page.content()
-        #     print(html)
-        #     browser.close()
-
         if proxy:
             ip, port, username, password = proxy
             proxy = {
@@ -132,9 +107,7 @@ def get_book_title(url, proxy=None):
             }
 
         request = requests.get(url, impersonate="chrome", proxies=proxy)
-        html = request.text
-        print(html)
-        tree = etree.HTML(html, parser=None)
+        tree = etree.HTML(request.text, parser=None)
 
         div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
         span_element = div_element.xpath("./ul/li[1]/a/span")[0]

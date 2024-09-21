@@ -1,11 +1,9 @@
-FROM mcr.microsoft.com/playwright/python:jammy
+FROM python:3.12-alpine
 
 ENV TZ=Europe/London
 
 COPY . /app
 RUN pip install --no-cache-dir -r /app/requirements.txt
-
-RUN playwright install webkit
 
 RUN pyarmor gen --output /app /app/main.py
 
