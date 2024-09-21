@@ -1,32 +1,13 @@
 import os
 import requests
 import datetime
+from config import AGENTS, LOCATION_DICT
 from xui_credentials import get_credentials
-
-DIRECTORY_PATH = "/sub"
-
-LOCATION_DICT = {
-    "dalian": "大连",
-    "foshan": "佛山",
-    "default": "默认",
-    "tianjin": "天津",
-    "jinghai": "静海",
-    "beijing": "北京",
-    "dongguan": "东莞",
-    "tangshan": "唐山",
-    "guangzhou": "广州",
-    "shijiazhuang": "石家庄",
-}
-
-AGENTS = [
-    ("clash-verge/1.8.0", "clash.yaml"),
-    ("shadowrocket/2.2.50", "shadowrocket"),
-]
 
 MITCE_URL = os.environ.get("MITCE_URL")
 
 if MITCE_URL is None:
-    print("Environment variables not fulfilled")
+    raise Exception("Environment variables not fulfilled")
 
 
 def get_provider_ip():

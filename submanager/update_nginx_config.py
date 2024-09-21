@@ -1,9 +1,7 @@
 import os
 import datetime
+from config import DIRECTORY_PATH, NGINX_PATH
 from xui_credentials import get_credentials
-
-DIRECTORY_PATH = "/sub"
-NGINX_PATH = "/conf.d"
 
 
 def update_nginx_config(credentials):
