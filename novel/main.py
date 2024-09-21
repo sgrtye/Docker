@@ -97,26 +97,22 @@ def load_cache():
     return titles
 
 
-def get_book_title(url, proxy=None):
+def get_url_html(url, proxy=None):
     try:
-        if proxy:
-            ip, port, username, password = proxy
-            proxy = {
-                "http": f"http://{username}:{password}@{ip}:{port}",
-                "https": f"http://{username}:{password}@{ip}:{port}",
-            }
-
         request = requests.get(url, impersonate="chrome", proxies=proxy)
-        tree = etree.HTML(request.text, parser=None)
-
-        div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
-        span_element = div_element.xpath("./ul/li[1]/a/span")[0]
-        return span_element.text
+        return request.text
 
     except Exception as e:
         if proxy is None:
             print("The following error occurred when using native ip")
         raise e
+
+
+def extract_book_title(html):
+    tree = etree.HTML(html, parser=None)
+    div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
+    span_element = div_element.xpath("./ul/li[1]/a/span")[0]
+    return span_element.text
 
 
 class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
@@ -187,16 +183,21 @@ if __name__ == "__main__":
                 j = (j + 1) % len(proxies)
 
                 ip, port, username, password = proxies[j]
+                proxy = {
+                    "http": f"http://{username}:{password}@{ip}:{port}",
+                    "https": f"http://{username}:{password}@{ip}:{port}",
+                }
 
                 try:
                     url = BOOK_URL.replace("BOOK_ID", books[i][0])
-                    title = get_book_title(url, proxies[j])
+                    html = get_url_html(url, proxy)
+                    title = extract_book_title(html)
 
                     if title != titles.get(books[i][1]):
                         if title == titles.get(books[i][1] + "previous"):
                             break
 
-                        if title != get_book_title(url):
+                        if title != extract_book_title(get_url_html(url)):
                             break
 
                         if titles.get(books[i][1]) is not None:
