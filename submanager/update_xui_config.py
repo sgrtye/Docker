@@ -1,6 +1,6 @@
 import os
 import datetime
-from config import AGENTS, DIRECTORY_PATH
+from config import DIRECTORY_PATH
 from utilities import (
     get_credentials,
     get_provider_ip,
