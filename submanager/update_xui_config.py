@@ -1,5 +1,4 @@
 import os
-import requests
 import datetime
 from submanager.config import AGENTS, DIRECTORY_PATH
 from submanager.utilities import (
@@ -26,7 +25,7 @@ def generate_config(servers, uuid, host, path, config_path, save_path):
         file.write(config_content)
 
 
-def update_client_config(locations, providers, credentials):
+def update_config(locations, providers, credentials):
     for client in credentials:
         name, uuid, host, path = (
             client["name"],
@@ -71,7 +70,7 @@ def update():
         locations = get_location_ip()
         providers = get_provider_ip()
         credentials = get_credentials()
-        update_client_config(locations, providers, credentials)
+        update_config(locations, providers, credentials)
 
     except Exception as e:
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
