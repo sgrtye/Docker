@@ -59,6 +59,9 @@ def update_config(locations, providers, credentials):
             client["path"],
         )
 
+        if name != 'SGRTYE':
+            continue
+
         save_path = os.path.join(
             DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:13]}/china/clash.yaml"
         )
@@ -66,7 +69,7 @@ def update_config(locations, providers, credentials):
 
     print(
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "New client config files generated",
+        "New monitor config files generated",
     )
 
 

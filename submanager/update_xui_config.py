@@ -61,7 +61,7 @@ def update_config(locations, providers, credentials):
 
     print(
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "New client config files generated",
+        "New xui config files generated",
     )
 
 
