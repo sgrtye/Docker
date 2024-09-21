@@ -3,11 +3,11 @@ import time
 import json
 import telebot
 import datetime
-import requests
 import threading
 import http.server
 import socketserver
 from lxml import etree
+from curl_cffi import requests
 from playwright_stealth import stealth_sync
 from playwright.sync_api import sync_playwright
 
@@ -101,29 +101,39 @@ def load_cache():
 
 def get_book_title(url, proxy=None):
     try:
-        with sync_playwright() as p:
-            browser = p.webkit.launch()
+        # with sync_playwright() as p:
+        #     browser = p.webkit.launch()
 
-            if proxy:
-                ip, port, username, password = proxy
-                context = browser.new_context(
-                    proxy={
-                        "server": f"{ip}:{port}",
-                        "username": username,
-                        "password": password,
-                    }
-                )
-                page = context.new_page()
-            else:
-                page = browser.new_page()
+        #     if proxy:
+        #         ip, port, username, password = proxy
+        #         context = browser.new_context(
+        #             proxy={
+        #                 "server": f"{ip}:{port}",
+        #                 "username": username,
+        #                 "password": password,
+        #             }
+        #         )
+        #         page = context.new_page()
+        #     else:
+        #         page = browser.new_page()
 
-            stealth_sync(page)
-            page.goto(url)
-            page.wait_for_load_state("domcontentloaded")
-            html = page.content()
-            print(html)
-            browser.close()
+        #     stealth_sync(page)
+        #     page.goto(url)
+        #     page.wait_for_load_state("domcontentloaded")
+        #     html = page.content()
+        #     print(html)
+        #     browser.close()
 
+        if proxy:
+            ip, port, username, password = proxy
+            proxy = {
+                "http": f"http://{username}:{password}@{ip}:{port}",
+                "https": f"http://{username}:{password}@{ip}:{port}",
+            }
+
+        request = requests.get(url, impersonate="chrome", proxies=proxy)
+        html = request.text
+        print(html)
         tree = etree.HTML(html, parser=None)
 
         div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]

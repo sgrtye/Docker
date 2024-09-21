@@ -1,6 +1,7 @@
 lxml
 pyarmor
 requests
+curl_cffi
 playwright
 pyTelegramBotAPI
 playwright_stealth
