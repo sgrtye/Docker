@@ -140,7 +140,7 @@ def bytes_to_speed(bytes, decimal_place=2):
 
 
 def xui_login():
-    if xui_session.post(XUI_URL + "/panel/inbound/onlines").status_code != 200:
+    if xui_session.post(XUI_URL + "/server/status").status_code != 200:
         xui_session.post(
             XUI_URL + "/login",
             data={"username": XUI_USERNAME, "password": XUI_PASSWORD},
@@ -151,7 +151,7 @@ def get_xui_status():
     xui_login()
 
     status = xui_session.post(XUI_URL + "/server/status")
-    online = xui_session.post(XUI_URL + "/panel/inbound/onlines")
+    online = xui_session.post(XUI_URL + "/xui/inbound/onlines")
 
     status = status.json()
     online = online.json()
