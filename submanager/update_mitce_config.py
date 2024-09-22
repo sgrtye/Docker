@@ -29,6 +29,9 @@ def update_mitce_config(credentials):
             save_path = os.path.join(
                 DIRECTORY_PATH, "conf", rf"{name}-{uuid[0:13]}", file_name
             )
+
+            if os.path.exists(save_path):
+                os.remove(save_path)
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
             os.link(global_save_path, save_path)
 
