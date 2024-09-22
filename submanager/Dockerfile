@@ -5,7 +5,7 @@ ENV TZ=Europe/London
 COPY . /app
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-RUN pyarmor gen --output /app /app
+RUN pyarmor gen --output /app /app/*.py
 
 RUN chmod 755 /app/entry.sh
 RUN /usr/bin/crontab /app/crontab.txt
