@@ -24,7 +24,7 @@ def get_credentials():
     session.post(
         XUI_URL + "/login", data={"username": XUI_USERNAME, "password": XUI_PASSWORD}
     )
-    response = session.post(XUI_URL + "/panel/inbound/list")
+    response = session.post(XUI_URL + "/xui/inbound/list")
 
     if response.status_code != 200:
         raise Exception("No credentials available")
