@@ -1,12 +1,15 @@
-FROM python:3.9
+FROM python:3.12-slim
 
 ENV TZ=Europe/London
 
-RUN wget https://dl-ssl.google.com/linux/linux_signing_key.pub -O /tmp/google.pub
-RUN gpg --no-default-keyring --keyring /etc/apt/keyrings/google-chrome.gpg --import /tmp/google.pub
-RUN echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main' | sudo tee /etc/apt/sources.list.d/google-chrome.list
-RUN apt-get -y update
-RUN apt-get install -y google-chrome-stable
+RUN apt-get update && apt-get install -y wget gnupg --no-install-recommends
+
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+
+RUN apt-get update && apt-get install -y \
+    google-chrome-stable \
+    --no-install-recommends
 
 COPY . /app
 RUN pip install --no-cache-dir -r /app/requirements.txt
