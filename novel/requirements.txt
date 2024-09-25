@@ -1,4 +1,5 @@
 lxml
 pyarmor
-curl_cffi
+requests
+seleniumbase
 pyTelegramBotAPI
