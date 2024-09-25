@@ -1,6 +1,7 @@
 FROM python:3.12-slim
 
 ENV TZ=Europe/London
+ENV DISPLAY=:99
 
 RUN apt-get update
 RUN apt-get install -y gnupg curl ca-certificates --no-install-recommends
