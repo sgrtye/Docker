@@ -109,10 +109,15 @@ def get_url_html(url, proxy=None):
 
 
 def extract_book_title(html):
-    tree = etree.HTML(html, parser=None)
-    div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
-    span_element = div_element.xpath("./ul/li[1]/a/span")[0]
-    return span_element.text
+    try:
+        tree = etree.HTML(html, parser=None)
+        div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
+        span_element = div_element.xpath("./ul/li[1]/a/span")[0]
+        return span_element.text
+
+    except Exception as e:
+        print("The following error occurred when extracting book title")
+        raise e
 
 
 class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
