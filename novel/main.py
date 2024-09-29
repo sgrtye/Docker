@@ -100,7 +100,7 @@ def load_cache():
 
 def get_url_html(url, proxy=None):
     try:
-        with SB(uc=True, proxy=proxy) as sb:
+        with SB(uc=True, proxy=proxy, headless2=True) as sb:
             sb.uc_open_with_reconnect(url, 5)
             sb.uc_gui_click_captcha()
             return sb.get_page_source()
