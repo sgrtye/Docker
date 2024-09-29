@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import random
 import telebot
 import datetime
 import requests
@@ -58,6 +59,8 @@ def load_proxies():
 
             if len(proxies) == 0:
                 raise Exception("No available proxy")
+
+            random.shuffle(proxies)
 
         else:
             raise Exception("Proxy server not responding")
