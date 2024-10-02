@@ -17,7 +17,6 @@ bot = telebot.TeleBot(TELEBOT_TOKEN, parse_mode="MarkdownV2")
 commands = [
     telebot.types.BotCommand("info", "Get server usage status"),
     telebot.types.BotCommand("novel", "Get novel latest chapters"),
-    telebot.types.BotCommand("urls", "Get novel urls"),
     telebot.types.BotCommand("restore", "Restart all exited containers"),
 ]
 
@@ -113,22 +112,6 @@ def novelUpdate():
     return MarkdownV2Encode(reply)
 
 
-def novelURLs():
-    response = requests.get(NOVEL_URL + "/urls")
-    reply = []
-
-    if response.status_code == 200:
-        content = response.content.decode("utf-8")
-        data_dict = json.loads(content)
-
-        for novel, url in data_dict.items():
-            reply.append(f"{novel}: \n{url}")
-    else:
-        reply.append(f"Novel urls is not currently available")
-
-    return MarkdownV2Encode(reply)
-
-
 def restore():
     client = docker.DockerClient("unix:///var/run/docker.sock")
     containers = client.containers.list(all=True, filters={"status": "exited"})
@@ -161,11 +144,6 @@ def handle_info_command(message):
 @bot.message_handler(commands=["novel"])
 def handle_novel_update_command(message):
     bot.reply_to(message, novelUpdate())
-
-
-@bot.message_handler(commands=["urls"])
-def handle_novel_urls_command(message):
-    bot.reply_to(message, novelURLs())
 
 
 @bot.message_handler(commands=["restore"])
