@@ -104,8 +104,8 @@ def novelUpdate():
         content = response.content.decode("utf-8")
         data_dict = json.loads(content)
 
-        for novel, title in data_dict.items():
-            reply.append(f"{novel}: \n{title}")
+        for novel, (title, url) in data_dict.items():
+            reply.append(f"{novel}: \n{title}\n{url}")
     else:
         reply.append(f"Novel update is not currently available")
 
