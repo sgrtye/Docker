@@ -144,6 +144,16 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
             }
             response = json.dumps(filtered_titles)
             self.wfile.write(response.encode("utf-8"))
+        elif self.path == "/urls":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+
+            book_urls = {
+                name: BOOK_URL.replace("BOOK_ID", id) for id, name in books.items()
+            }
+            response = json.dumps(book_urls)
+            self.wfile.write(response.encode("utf-8"))
         elif self.path == "/health":
             if time.time() - last_updated_time > loop_time:
                 self.send_response(500)
