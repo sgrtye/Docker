@@ -138,7 +138,7 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
             payload = {
-                name: (titles[name], BOOK_URL.replace("BOOK_ID", id))
+                name: (titles.get(name, 'Unknown'), BOOK_URL.replace("BOOK_ID", id))
                 for id, name in books.items()
             }
             response = json.dumps(payload)
