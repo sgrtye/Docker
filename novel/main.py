@@ -139,7 +139,7 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
 
             payload = {
                 name: (titles.get(name, 'Unknown'), BOOK_URL.replace("BOOK_ID", id))
-                for id, name in books.items()
+                for id, name in books
             }
             response = json.dumps(payload)
             self.wfile.write(response.encode("utf-8"))
