@@ -97,7 +97,7 @@ def dockerUsage():
 
 
 def novelUpdate():
-    response = requests.get(NOVEL_URL + "/update")
+    response = requests.get(NOVEL_URL)
     reply = []
 
     if response.status_code == 200:
