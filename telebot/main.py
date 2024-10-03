@@ -109,7 +109,7 @@ def novelUpdate():
     else:
         reply.append(f"Novel update is not currently available")
 
-    return MarkdownV2Encode(reply)
+    return reply
 
 
 def restore():
