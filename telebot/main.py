@@ -109,7 +109,6 @@ def novelUpdate():
     else:
         reply.append(f"Novel update is not currently available")
 
-    print(reply)
     return reply
 
 
@@ -144,7 +143,7 @@ def handle_info_command(message):
 
 @bot.message_handler(commands=["novel"])
 def handle_novel_update_command(message):
-    bot.reply_to(message, novelUpdate())
+    bot.reply_to(message, novelUpdate(), parse_mode=None)
 
 
 @bot.message_handler(commands=["restore"])
