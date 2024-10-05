@@ -109,6 +109,7 @@ def novelUpdate():
     else:
         reply.append(f"Novel update is not currently available")
 
+    reply = '/n'.join(reply)
     return reply
 
 
