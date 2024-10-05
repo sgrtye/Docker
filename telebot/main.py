@@ -12,7 +12,7 @@ NOVEL_URL = os.environ.get("NOVEL_URL")
 if TELEBOT_TOKEN is None or NOVEL_URL is None:
     print("Environment variables not fulfilled")
 
-bot = telebot.TeleBot(TELEBOT_TOKEN, parse_mode="MarkdownV2")
+bot = telebot.TeleBot(TELEBOT_TOKEN)
 
 commands = [
     telebot.types.BotCommand("info", "Get server usage status"),
@@ -138,17 +138,17 @@ restore()
 
 @bot.message_handler(commands=["info"])
 def handle_info_command(message):
-    bot.reply_to(message, dockerUsage())
+    bot.reply_to(message, dockerUsage(), parse_mode="MarkdownV2")
 
 
 @bot.message_handler(commands=["novel"])
 def handle_novel_update_command(message):
-    bot.reply_to(message, novelUpdate(), parse_mode=None)
+    bot.reply_to(message, novelUpdate())
 
 
 @bot.message_handler(commands=["restore"])
 def handle_container_restore_command(message):
-    bot.reply_to(message, restore())
+    bot.reply_to(message, restore(), parse_mode="MarkdownV2")
 
 
 if __name__ == "__main__":
