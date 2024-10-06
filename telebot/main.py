@@ -28,6 +28,11 @@ def MarkdownV2Encode(reply):
     return f"```\n{text}```"
 
 
+def DefaultEncode(reply):
+    text = "\n".join(reply)
+    return text
+
+
 def dockerUsage():
     # Create a Docker client
     client = docker.DockerClient("unix:///var/run/docker.sock")
@@ -93,7 +98,7 @@ def dockerUsage():
     reply.append(f"\nDocker CPU Usage: {total_cpu_usage:.2f} %")
     reply.append(f"Docker Memory Usage: {total_memory_usage_mb:.2f} MB")
 
-    return MarkdownV2Encode(reply)
+    return reply
 
 
 def novelUpdate():
@@ -109,7 +114,7 @@ def novelUpdate():
     else:
         reply.append(f"Novel update is not currently available")
 
-    return MarkdownV2Encode(reply)
+    return reply
 
 
 def restore():
@@ -129,7 +134,7 @@ def restore():
     if not reply:
         reply.append("All containers are running")
 
-    return MarkdownV2Encode(reply)
+    return reply
 
 
 # Booting up all containers that were not turned off manually
@@ -138,17 +143,17 @@ restore()
 
 @bot.message_handler(commands=["info"])
 def handle_info_command(message):
-    bot.reply_to(message, dockerUsage(), parse_mode="MarkdownV2")
+    bot.reply_to(message, MarkdownV2Encode(dockerUsage()), parse_mode="MarkdownV2")
 
 
 @bot.message_handler(commands=["novel"])
 def handle_novel_update_command(message):
-    bot.reply_to(message, novelUpdate())
+    bot.reply_to(message, DefaultEncode(novelUpdate()), parse_mode=None)
 
 
 @bot.message_handler(commands=["restore"])
 def handle_container_restore_command(message):
-    bot.reply_to(message, restore(), parse_mode="MarkdownV2")
+    bot.reply_to(message, MarkdownV2Encode(restore()), parse_mode="MarkdownV2")
 
 
 if __name__ == "__main__":
