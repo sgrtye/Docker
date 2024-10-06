@@ -113,6 +113,7 @@ def get_url_html(url, proxy=None):
 
 def extract_book_title(html):
     try:
+        html.encoding = "gbk"
         tree = etree.HTML(html, parser=None)
         div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
         span_element = div_element.xpath("./ul/li[1]/a/span")[0]
