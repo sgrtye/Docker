@@ -4,12 +4,11 @@ import json
 import random
 import telebot
 import datetime
-import requests
 import threading
 import http.server
 import socketserver
 from lxml import etree
-from seleniumbase import SB
+from curl_cffi import requests
 
 IP_PATH = "/config/ip.txt"
 BOOK_PATH = "/config/book.txt"
@@ -103,10 +102,8 @@ def load_cache():
 
 def get_url_html(url, proxy=None):
     try:
-        with SB(uc=True, proxy=proxy, headless2=True) as sb:
-            sb.uc_open_with_reconnect(url, 5)
-            sb.uc_gui_click_captcha()
-            return sb.get_page_source()
+        request = requests.get(url, impersonate="chrome", proxies=proxy)
+        return request.text
 
     except Exception as e:
         if proxy is None:
@@ -193,11 +190,11 @@ if __name__ == "__main__":
                 j = (j + 1) % len(proxies)
 
                 ip, port, username, password = proxies[j]
-                proxy = f"{username}:{password}@{ip}:{port}"
-                # proxy = {
-                #     "http": f"http://{username}:{password}@{ip}:{port}",
-                #     "https": f"http://{username}:{password}@{ip}:{port}",
-                # }
+                # proxy = f"{username}:{password}@{ip}:{port}"
+                proxy = {
+                    "http": f"http://{username}:{password}@{ip}:{port}",
+                    "https": f"http://{username}:{password}@{ip}:{port}",
+                }
 
                 try:
                     url = BOOK_URL.replace("BOOK_ID", books[i][0])
