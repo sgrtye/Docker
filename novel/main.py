@@ -59,8 +59,6 @@ def load_proxies():
             if len(proxies) == 0:
                 raise Exception("No available proxy")
 
-            random.shuffle(proxies)
-
         else:
             raise Exception("Proxy server not responding")
 
@@ -74,13 +72,17 @@ def load_proxies():
 
 def load_books():
     books = []
+
     with open(BOOK_PATH, "r") as file:
         lines = file.readlines()
+
     for line in lines:
         if line.startswith("//"):
             continue
+
         number, name = line.strip().split(":")
         books.append((number, name))
+
     return books
 
 
@@ -93,6 +95,7 @@ def load_cache():
             book_name = set(name for _, name in books)
             book_name_previous = set(name + "previous" for _, name in books)
             dict_copy = titles.copy()
+
             for book in dict_copy.keys():
                 if book not in book_name and book not in book_name_previous:
                     del titles[book]
@@ -136,7 +139,7 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
             payload = {
-                name: (titles.get(name, 'Unknown'), BOOK_URL.replace("BOOK_ID", id))
+                name: (titles.get(name, "Unknown"), BOOK_URL.replace("BOOK_ID", id))
                 for id, name in books
             }
             response = json.dumps(payload)
@@ -187,6 +190,9 @@ if __name__ == "__main__":
 
     try:
         while True:
+            if j == len(proxies) - 1 and random.randint(0, 9) == 0:
+                random.shuffle(proxies)
+
             for index in range(len(proxies)):
                 j = (j + 1) % len(proxies)
 
