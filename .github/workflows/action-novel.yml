@@ -21,6 +21,5 @@ jobs:
           REGISTRY_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
           REGISTRY_PASSWORD: ${{ secrets.DOCKER_HUB_TOKEN }}
           REGISTRY_NAME_SPACE: ${{ secrets.DOCKER_HUB_NAME_SPACE }}
-          DOCKER_BUILD_PLATFORMS: 'linux/amd64'
           DOCKER_BUILD_NAME: 'novel'
           DOCKER_BUILD_PATH: './novel'
