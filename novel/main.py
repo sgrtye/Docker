@@ -47,20 +47,21 @@ def load_proxies():
         proxies = []
         response = requests.get(PROXY_URL)
 
-        if response.status_code == 200:
-            file_content = response.text
-            ip_list = file_content.strip().split("\n")
-
-            for ip_entry in ip_list:
-                ip, port, username, password = ip_entry.rstrip("\r").split(":")
-                if ip not in load_unavailable_ips():
-                    proxies.append((ip, port, username, password))
-
-            if len(proxies) == 0:
-                raise Exception("No available proxy")
-
-        else:
+        if response.status_code != 200:
             raise Exception("Proxy server not responding")
+
+        file_content = response.text
+        ip_list = file_content.strip().split("\n")
+
+        for ip_entry in ip_list:
+            ip, port, username, password = ip_entry.rstrip("\r").split(":")
+            if ip not in load_unavailable_ips():
+                proxies.append((ip, port, username, password))
+
+        if len(proxies) == 0:
+            raise Exception("No available proxy")
+
+        random.shuffle(proxies)
 
         return proxies
 
@@ -243,9 +244,15 @@ if __name__ == "__main__":
                     if index == len(proxies) - 1:
                         raise e
 
-            last_updated_time = time.time()
+            current_time = time.time()
+            if time.localtime(current_time).tm_mday != time.localtime(last_updated_time).tm_mday:
+                proxies = load_proxies()
+            last_updated_time = current_time
             time.sleep(sleep_interval)
             i = (i + 1) % len(books)
+
+    except SystemExit:
+        raise
 
     except Exception as e:
         bot.send_message(
