@@ -191,9 +191,6 @@ if __name__ == "__main__":
 
     try:
         while True:
-            if j == len(proxies) - 1 and random.randint(0, 9) == 0:
-                random.shuffle(proxies)
-
             for index in range(len(proxies)):
                 j = (j + 1) % len(proxies)
 
