@@ -202,20 +202,19 @@ def get_info_by_ticker(tickers):
     info = dict()
     tickers = tickers.split(" ")
 
-    try:
-        for ticker in tickers:
+    for ticker in tickers:
+        try:
             price, old_price = get_ticker_prices(ticker)
             trend = ((price - old_price) / old_price) * 100
             info[ticker] = format_number(price)
             info[ticker + "_TREND"] = format_number(trend)
 
+        except Exception as e:
+            print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
+
+    if info:
         global last_updated_time
         last_updated_time = time.time()
-    except Exception as e:
-        print(
-            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Error occurred when fetching information",
-        )
 
     return info
 
