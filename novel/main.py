@@ -26,6 +26,7 @@ if (
     or PROXY_URL is None
 ):
     print("Environment variables not fulfilled")
+    raise SystemExit
 
 titles, last_updated_time, loop_time = None, None, None
 

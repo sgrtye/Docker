@@ -12,6 +12,7 @@ HOST_NAME = os.environ.get("HOST_NAME")
 
 if SENDGRID_API_KEY is None or SENDER_EMAIL is None or RECIPIENT_EMAIL is None or HOST_NAME is None:
     print("Environment variables not fulfilled")
+    raise SystemExit
 
 NOTIFICATION_INTERVAL_MINS = 20
 batch_id = None

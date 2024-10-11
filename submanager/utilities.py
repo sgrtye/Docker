@@ -16,7 +16,8 @@ if (
     or XUI_USERNAME is None
     or XUI_PASSWORD is None
 ):
-    raise Exception("Environment variables not fulfilled")
+    print("Environment variables not fulfilled")
+    raise SystemExit
 
 
 def get_credentials():

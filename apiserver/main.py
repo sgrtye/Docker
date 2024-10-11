@@ -18,6 +18,7 @@ XUI_PASSWORD = os.environ.get("XUI_PASSWORD")
 
 if XUI_URL is None or XUI_USERNAME is None or XUI_PASSWORD is None:
     print("Environment variables not fulfilled")
+    raise SystemExit
 
 xui_status = dict()
 stock_status = dict()

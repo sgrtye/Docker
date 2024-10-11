@@ -11,6 +11,7 @@ NOVEL_URL = os.environ.get("NOVEL_URL")
 
 if TELEBOT_TOKEN is None or NOVEL_URL is None:
     print("Environment variables not fulfilled")
+    raise SystemExit
 
 bot = telebot.TeleBot(TELEBOT_TOKEN)
 
