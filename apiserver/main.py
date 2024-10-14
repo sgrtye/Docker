@@ -65,11 +65,9 @@ class apiHandler(http.server.BaseHTTPRequestHandler):
             update_xui_status()
             response = json.dumps(xui_status)
         elif self.path == "/capital":
-            response = json.dumps({**stock_status, **index_status})
+            response = json.dumps(stock_status | index_status)
         elif self.path == "/exchange":
-            response = json.dumps(
-                {**crypto_status, **currency_status, **commodity_status}
-            )
+            response = json.dumps(crypto_status | currency_status | commodity_status)
         elif self.path == "/health":
             if time.time() - last_updated_time > 1200:
                 self.send_response(500)

@@ -44,13 +44,13 @@ def update_config(locations, providers, credentials):
 
         for loc, loc_value in locations.items():
             for pro, pro_value in providers.items():
-                servers = {
-                    **{
-                        f"实时节点{index + 1}_IP": value
-                        for index, value in enumerate(pro_value.values())
-                    },
-                    **loc_value,
+                provider_nodes = {
+                    f"实时节点{index + 1}_IP": value
+                    for index, value in enumerate(pro_value.values())
                 }
+                location_nodes = loc_value
+                servers = provider_nodes | location_nodes
+
                 config_path = os.path.join(DIRECTORY_PATH, "file", "config.yaml")
                 save_path = os.path.join(
                     DIRECTORY_PATH,
