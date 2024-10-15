@@ -27,6 +27,8 @@ crypto_status = dict()
 currency_status = dict()
 commodity_status = dict()
 
+UPDATE_INTERVAL = 12
+
 STOCKS = "AAPL GOOG NVDA TSLA"
 INDICES = "^IXIC ^GSPC 000001.SS"
 CRYPTOS = "BTC-USD ETH-USD"
@@ -69,7 +71,7 @@ class apiHandler(http.server.BaseHTTPRequestHandler):
         elif self.path == "/exchange":
             response = json.dumps(crypto_status | currency_status | commodity_status)
         elif self.path == "/health":
-            if time.time() - last_updated_time > 1200:
+            if time.time() - last_updated_time > (UPDATE_INTERVAL + 1) * 60:
                 self.send_response(500)
             else:
                 self.send_response(200)
@@ -233,11 +235,11 @@ if __name__ == "__main__":
     api_thread.daemon = True
     api_thread.start()
 
-    schedule.every().hour.at(":00").do(update_status, symbols=STOCKS)
-    schedule.every().hour.at(":12").do(update_status, symbols=INDICES)
-    schedule.every().hour.at(":24").do(update_status, symbols=CRYPTOS)
-    schedule.every().hour.at(":36").do(update_status, symbols=CURRENCIES)
-    schedule.every().hour.at(":48").do(update_status, symbols=COMMODITIES)
+    schedule.every().hour.at(f":{str(UPDATE_INTERVAL * 0).zfill(2)}").do(update_status, symbols=STOCKS)
+    schedule.every().hour.at(f":{str(UPDATE_INTERVAL * 1).zfill(2)}").do(update_status, symbols=INDICES)
+    schedule.every().hour.at(f":{str(UPDATE_INTERVAL * 2).zfill(2)}").do(update_status, symbols=CRYPTOS)
+    schedule.every().hour.at(f":{str(UPDATE_INTERVAL * 3).zfill(2)}").do(update_status, symbols=CURRENCIES)
+    schedule.every().hour.at(f":{str(UPDATE_INTERVAL * 4).zfill(2)}").do(update_status, symbols=COMMODITIES)
 
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "API server started")
 
