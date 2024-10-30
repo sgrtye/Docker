@@ -23,6 +23,7 @@ for event in response:
                 tokens_pair[token1] = token2
                 tokens_pair[token2] = token1
 
+print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Monitor started")
 print(f"Found {len(tokens_pair) // 2} markets")
 
 url = "wss://ws-subscriptions-clob.polymarket.com/ws/market"
@@ -39,8 +40,6 @@ async def main():
                 }
             )
         )
-
-        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Monitor started")
 
         while True:
             message = await websocket.recv()
@@ -97,10 +96,28 @@ async def main():
                 ):
                     print(
                         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "Arbitrage opportunities found",
+                        "Arbitrage buy opportunities found+++",
+                        float(event1["asks"][-1]["price"])
+                        + float(event2["asks"][-1]["price"]),
                     )
                     print(event1["asks"][-1])
                     print(event2["asks"][-1])
+
+                if (
+                    event1["bids"]
+                    and event2["bids"]
+                    and float(event1["bids"][-1]["price"])
+                    + float(event2["bids"][-1]["price"])
+                    >= 1
+                ):
+                    print(
+                        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Arbitrage sell opportunities found---",
+                        float(event1["bids"][-1]["price"])
+                        + float(event2["bids"][-1]["price"]),
+                    )
+                    print(event1["bids"][-1])
+                    print(event2["bids"][-1])
 
                 checked.append(asset_id)
                 checked.append(pair_id)
