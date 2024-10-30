@@ -23,6 +23,7 @@ for event in response:
                 tokens_pair[token1] = token2
                 tokens_pair[token2] = token1
 
+print(f"Found {len(tokens_pair) // 2} markets")
 
 url = "wss://ws-subscriptions-clob.polymarket.com/ws/market"
 last_pong = datetime.datetime.now()
@@ -115,4 +116,3 @@ if __name__ == "__main__":
 
         except Exception as e:
             print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
-            print(f"Error occurred on line {e.__traceback__.tb_lineno}")
