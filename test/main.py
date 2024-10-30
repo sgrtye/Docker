@@ -109,4 +109,10 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    while True:
+        try:
+            asyncio.run(main())
+
+        except Exception as e:
+            print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
+            print(f"Error occurred on line {e.__traceback__.tb_lineno}")
