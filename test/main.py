@@ -39,6 +39,8 @@ async def main():
             )
         )
 
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Monitor started")
+
         while True:
             message = await websocket.recv()
 
@@ -92,7 +94,10 @@ async def main():
                     + float(event2["asks"][-1]["price"])
                     < 1
                 ):
-                    print("Arbitrage opportunities found")
+                    print(
+                        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Arbitrage opportunities found",
+                    )
                     print(event1["asks"][-1])
                     print(event2["asks"][-1])
 
