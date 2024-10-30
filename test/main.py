@@ -5,23 +5,23 @@ import datetime
 import requests
 import websockets
 
-
-response = requests.get(
-    "https://gamma-api.polymarket.com/events?limit=100&closed=false"
-).json()
+price_range = [(10_000, 1_000_000), (1_000_000, 50_000_000), (50_000_000, 2_000_000_000)]
 tokens_pair = dict()
+range_indicator = dict()
 
-for event in response:
-    if event["volume"] > 10_000_000 and event["volume24hr"] > 1_000_000:
+for low, high in price_range:
+    response = requests.get(
+        f"https://gamma-api.polymarket.com/markets?limit=100&closed=false&volume_num_min={low}&volume_num_max={high}"
+    ).json()
 
-        for market in event["markets"]:
-            if market["volumeNum"] < 1_000_000:
-                continue
-
-            if "outcomePrices" in market and "clobTokenIds" in market:
-                token1, token2 = ast.literal_eval(market["clobTokenIds"])
-                tokens_pair[token1] = token2
-                tokens_pair[token2] = token1
+    for market in response:
+        if "outcomePrices" in market and "clobTokenIds" in market:
+            token1, token2 = ast.literal_eval(market["clobTokenIds"])
+            tokens_pair[token1] = token2
+            tokens_pair[token2] = token1
+            range_indicator[token1] = f"range {low} to {high}"
+        else:
+            print(market)
 
 print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Monitor started")
 print(f"Found {len(tokens_pair) // 2} markets")
@@ -97,6 +97,7 @@ async def main():
                     print(
                         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         "Arbitrage buy opportunities found+++",
+                        f"market from {range_indicator[asset_id]}",
                         float(event1["asks"][-1]["price"])
                         + float(event2["asks"][-1]["price"]),
                     )
@@ -113,6 +114,7 @@ async def main():
                     print(
                         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         "Arbitrage sell opportunities found---",
+                        f"market from {range_indicator[asset_id]}",
                         float(event1["bids"][-1]["price"])
                         + float(event2["bids"][-1]["price"]),
                     )
