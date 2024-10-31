@@ -110,7 +110,7 @@ async def main():
                 ):
                     print(
                         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "Arbitrage buy opportunities found+++",
+                        "Arbitrage buy opportunities found",
                         f"market from {range_indicator[asset_id]}",
                         float(event1["asks"][-1]["price"])
                         + float(event2["asks"][-1]["price"]),
@@ -118,22 +118,22 @@ async def main():
                     print(event1["asks"][-1])
                     print(event2["asks"][-1])
 
-                if (
-                    event1["bids"]
-                    and event2["bids"]
-                    and float(event1["bids"][-1]["price"])
-                    + float(event2["bids"][-1]["price"])
-                    >= 1
-                ):
-                    print(
-                        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "Arbitrage sell opportunities found---",
-                        f"market from {range_indicator[asset_id]}",
-                        float(event1["bids"][-1]["price"])
-                        + float(event2["bids"][-1]["price"]),
-                    )
-                    print(event1["bids"][-1])
-                    print(event2["bids"][-1])
+                # if (
+                #     event1["bids"]
+                #     and event2["bids"]
+                #     and float(event1["bids"][-1]["price"])
+                #     + float(event2["bids"][-1]["price"])
+                #     >= 1
+                # ):
+                #     print(
+                #         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                #         "Arbitrage sell opportunities found",
+                #         f"market from {range_indicator[asset_id]}",
+                #         float(event1["bids"][-1]["price"])
+                #         + float(event2["bids"][-1]["price"]),
+                #     )
+                #     print(event1["bids"][-1])
+                #     print(event2["bids"][-1])
 
                 checked.append(asset_id)
                 checked.append(pair_id)
