@@ -1,8 +1,9 @@
 FROM composer:latest
 
-COPY oci-arm-host-capacity/ /app
+COPY oci-arm-host-capacity/. /app
 COPY index.php crontab.txt entry.sh /app
 WORKDIR /app
+
 RUN composer install
 
 VOLUME /app/env
