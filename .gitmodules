@@ -1,0 +1,3 @@
+[submodule "oci/oci-arm-host-capacity"]
+	path = oci/oci-arm-host-capacity
+	url = https://github.com/hitrov/oci-arm-host-capacity.git
