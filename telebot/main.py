@@ -8,8 +8,9 @@ import datetime
 
 TELEBOT_TOKEN = os.environ.get("TELEBOT_TOKEN")
 NOVEL_URL = os.environ.get("NOVEL_URL")
+GLANCES_URL = os.environ.get("GLANCES_URL")
 
-if TELEBOT_TOKEN is None or NOVEL_URL is None:
+if TELEBOT_TOKEN is None or NOVEL_URL is None or GLANCES_URL is None:
     print("Environment variables not fulfilled")
     raise SystemExit
 
@@ -34,56 +35,25 @@ def DefaultEncode(reply):
     return text
 
 
-def dockerUsage():
-    # Create a Docker client
-    client = docker.DockerClient("unix:///var/run/docker.sock")
+def containerUsage():
+    response = requests.get(GLANCES_URL)
 
-    # Get all containers
-    containers = client.containers.list()
+    if response.status_code != 200:
+        return ["Container usage is not currently available"]
 
     total_cpu_usage = 0
     total_memory_usage = 0
+    containers = json.loads(response.content)
 
     reply = []
-
-    # Iterate over containers and retrieve resource usage
     reply.append(f"{'Name':<12} {'CPU':<5}  {'Memory':<5}")
 
-    stats1 = dict()
-    stats2 = dict()
-
     for container in containers:
-        stats1[container.name] = container.stats(stream=False)
+        container_name = container["name"]
 
-    time.sleep(10)
+        cpu_percentage = container["cpu"]["total"]
 
-    for container in containers:
-        stats2[container.name] = container.stats(stream=False)
-
-    for container in containers:
-        # Get container name
-        container_name = container.name
-
-        # Get container stats
-        stats = stats1[container.name]
-        cpu_stats1 = stats["cpu_stats"]
-        cpu_usage1 = cpu_stats1["cpu_usage"]["total_usage"]
-        cpu_system1 = cpu_stats1["system_cpu_usage"]
-
-        stats = stats2[container.name]
-        cpu_stats2 = stats["cpu_stats"]
-        cpu_usage2 = cpu_stats2["cpu_usage"]["total_usage"]
-        cpu_system2 = cpu_stats2["system_cpu_usage"]
-
-        memory_stats = stats["memory_stats"]
-
-        # CPU usage percentage
-        cpu_delta = cpu_usage2 - cpu_usage1
-        system_delta = cpu_system2 - cpu_system1
-        cpu_percentage = (cpu_delta / system_delta) * 100
-
-        # Memory usage in MB
-        memory_usage = memory_stats["usage"]
+        memory_usage = container["memory"]["usage"]
         memory_usage_mb = memory_usage / (1024 * 1024)
 
         total_cpu_usage += cpu_percentage
@@ -93,7 +63,6 @@ def dockerUsage():
             f"{container_name:<12} {cpu_percentage:<5.2f}% {memory_usage_mb:<5.1f} MB"
         )
 
-    # Total usage
     total_memory_usage_mb = total_memory_usage / (1024 * 1024)
 
     reply.append(f"\nDocker CPU Usage: {total_cpu_usage:.2f} %")
@@ -104,16 +73,17 @@ def dockerUsage():
 
 def novelUpdate():
     response = requests.get(NOVEL_URL)
+
+    if response.status_code != 200:
+        return ["Novel update is not currently available"]
+
     reply = []
 
-    if response.status_code == 200:
-        content = response.content.decode("utf-8")
-        data_dict = json.loads(content)
+    content = response.content.decode("utf-8")
+    data_dict = json.loads(content)
 
-        for novel, (title, url) in data_dict.items():
-            reply.append(f"{novel}: \n{title}\n{url}")
-    else:
-        reply.append(f"Novel update is not currently available")
+    for novel, (title, url) in data_dict.items():
+        reply.append(f"{novel}: \n{title}\n{url}")
 
     return reply
 
@@ -122,9 +92,9 @@ def restore():
     client = docker.DockerClient("unix:///var/run/docker.sock")
     containers = client.containers.list(all=True, filters={"status": "exited"})
     exited_containers = [
-        c
-        for c in containers
-        if c.attrs["HostConfig"]["RestartPolicy"]["Name"] != "unless-stopped"
+        container
+        for container in containers
+        if container.attrs["HostConfig"]["RestartPolicy"]["Name"] != "unless-stopped"
     ]
     reply = []
 
@@ -144,7 +114,7 @@ restore()
 
 @bot.message_handler(commands=["info"])
 def handle_info_command(message):
-    bot.reply_to(message, MarkdownV2Encode(dockerUsage()), parse_mode="MarkdownV2")
+    bot.reply_to(message, MarkdownV2Encode(containerUsage()), parse_mode="MarkdownV2")
 
 
 @bot.message_handler(commands=["novel"])
