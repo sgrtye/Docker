@@ -1,5 +1,4 @@
 import os
-import sys
 import time
 import json
 import signal
@@ -142,7 +141,7 @@ def handle_sigterm(signum, frame):
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "Title saved before exiting",
     )
-    sys.exit(0)
+    raise SystemExit(0)
 
 
 class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
