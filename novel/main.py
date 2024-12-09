@@ -1,6 +1,8 @@
 import os
+import sys
 import time
 import json
+import signal
 import random
 import telebot
 import datetime
@@ -129,6 +131,20 @@ def extract_book_title(html):
         raise e
 
 
+def save_titles():
+    with open(CACHE_PATH, "w") as file:
+        json.dump(titles, file)
+
+
+def handle_sigterm(signum, frame):
+    save_titles()
+    print(
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "Title saved before exiting",
+    )
+    sys.exit(0)
+
+
 class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         # Override the log_message method to do nothing
@@ -186,6 +202,8 @@ if __name__ == "__main__":
     api_thread.daemon = True
     api_thread.start()
 
+    signal.signal(signal.SIGTERM, handle_sigterm)
+
     print(
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Novel monitor started"
     )
@@ -223,9 +241,6 @@ if __name__ == "__main__":
                         titles[books[i][1] + "previous"] = titles.get(books[i][1])
                         titles[books[i][1]] = title
 
-                        with open(CACHE_PATH, "w") as file:
-                            json.dump(titles, file)
-
                     break
 
                 except Exception as e:
@@ -243,8 +258,13 @@ if __name__ == "__main__":
                         raise e
 
             current_time = time.time()
-            if time.localtime(current_time).tm_mday != time.localtime(last_updated_time).tm_mday:
+            if (
+                time.localtime(current_time).tm_mday
+                != time.localtime(last_updated_time).tm_mday
+            ):
                 proxies = load_proxies()
+                save_titles()
+
             last_updated_time = current_time
             time.sleep(sleep_interval)
             i = (i + 1) % len(books)
