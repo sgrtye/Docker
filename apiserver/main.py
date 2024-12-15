@@ -148,8 +148,8 @@ def xui_login() -> None:
 def get_xui_status() -> dict[str, str]:
     xui_login()
 
-    status: requests.Response = xui_session.post(XUI_URL + "/server/status")
-    online: requests.Response = xui_session.post(XUI_URL + "/xui/inbound/onlines")
+    status = xui_session.post(XUI_URL + "/server/status")
+    online = xui_session.post(XUI_URL + "/xui/inbound/onlines")
 
     status: dict = status.json()
     online: dict[str] = online.json()

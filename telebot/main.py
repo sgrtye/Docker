@@ -13,7 +13,7 @@ if NOVEL_URL is None or GLANCES_URL is None or TELEBOT_TOKEN is None:
     print("Environment variables not fulfilled")
     raise SystemExit
 
-bot: telebot.TeleBot = telebot.TeleBot(TELEBOT_TOKEN)
+bot = telebot.TeleBot(TELEBOT_TOKEN)
 
 
 def MarkdownV2Encode(reply) -> str:
@@ -27,7 +27,7 @@ def DefaultEncode(reply) -> str:
 
 
 def containerUsage() -> list[str]:
-    response: requests.Response = requests.get(GLANCES_URL)
+    response = requests.get(GLANCES_URL)
 
     if response.status_code != 200:
         return ["Container usage is not currently available"]
@@ -63,7 +63,7 @@ def containerUsage() -> list[str]:
 
 
 def novelUpdate() -> list[str]:
-    response: requests.Response = requests.get(NOVEL_URL)
+    response = requests.get(NOVEL_URL)
 
     if response.status_code != 200:
         return ["Novel update is not currently available"]
@@ -80,8 +80,10 @@ def novelUpdate() -> list[str]:
 
 
 def restore() -> list[str]:
-    client: docker.DockerClient = docker.DockerClient("unix:///var/run/docker.sock")
-    containers: list = client.containers.list(all=True, filters={"status": "exited"})
+    client = docker.DockerClient("unix:///var/run/docker.sock")
+    containers: list[docker.models.containers.Container] = client.containers.list(
+        all=True, filters={"status": "exited"}
+    )
     exited_containers: list = [
         container
         for container in containers
