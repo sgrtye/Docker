@@ -1,60 +1,51 @@
 import os
-import time
 import json
 import docker
 import telebot
 import requests
 import datetime
 
-TELEBOT_TOKEN = os.environ.get("TELEBOT_TOKEN")
-NOVEL_URL = os.environ.get("NOVEL_URL")
-GLANCES_URL = os.environ.get("GLANCES_URL")
+NOVEL_URL: str | None = os.environ.get("NOVEL_URL")
+GLANCES_URL: str | None = os.environ.get("GLANCES_URL")
+TELEBOT_TOKEN: str | None = os.environ.get("TELEBOT_TOKEN")
 
-if TELEBOT_TOKEN is None or NOVEL_URL is None or GLANCES_URL is None:
+if NOVEL_URL is None or GLANCES_URL is None or TELEBOT_TOKEN is None:
     print("Environment variables not fulfilled")
     raise SystemExit
 
-bot = telebot.TeleBot(TELEBOT_TOKEN)
-
-commands = [
-    telebot.types.BotCommand("info", "Get server usage status"),
-    telebot.types.BotCommand("novel", "Get novel latest chapters"),
-    telebot.types.BotCommand("restore", "Restart all exited containers"),
-]
-
-bot.set_my_commands(commands)
+bot: telebot.TeleBot = telebot.TeleBot(TELEBOT_TOKEN)
 
 
-def MarkdownV2Encode(reply):
+def MarkdownV2Encode(reply) -> str:
     text = "\n".join(reply)
     return f"```\n{text}```"
 
 
-def DefaultEncode(reply):
+def DefaultEncode(reply) -> str:
     text = "\n".join(reply)
     return text
 
 
-def containerUsage():
-    response = requests.get(GLANCES_URL)
+def containerUsage() -> list[str]:
+    response: requests.Response = requests.get(GLANCES_URL)
 
     if response.status_code != 200:
         return ["Container usage is not currently available"]
 
-    total_cpu_usage = 0
-    total_memory_usage = 0
-    containers = json.loads(response.content)
+    total_cpu_usage: float = 0
+    total_memory_usage: int = 0
+    containers: list[dict] = json.loads(response.content)
 
-    reply = []
+    reply: list[str] = []
     reply.append(f"{'Name':<12} {'CPU':<5}  {'Memory':<5}")
 
     for container in containers:
-        container_name = container["name"]
+        container_name: str = container["name"]
 
-        cpu_percentage = container["cpu"]["total"]
+        cpu_percentage: float = container["cpu"]["total"]
 
-        memory_usage = container["memory"]["usage"]
-        memory_usage_mb = memory_usage / (1024 * 1024)
+        memory_usage: int = container["memory"]["usage"]
+        memory_usage_mb: float = memory_usage / (1024 * 1024)
 
         total_cpu_usage += cpu_percentage
         total_memory_usage += memory_usage
@@ -63,7 +54,7 @@ def containerUsage():
             f"{container_name:<12} {cpu_percentage:<5.2f}% {memory_usage_mb:<5.1f} MB"
         )
 
-    total_memory_usage_mb = total_memory_usage / (1024 * 1024)
+    total_memory_usage_mb: float = total_memory_usage / (1024 * 1024)
 
     reply.append(f"\nDocker CPU Usage: {total_cpu_usage:.2f} %")
     reply.append(f"Docker Memory Usage: {total_memory_usage_mb:.2f} MB")
@@ -71,16 +62,16 @@ def containerUsage():
     return reply
 
 
-def novelUpdate():
-    response = requests.get(NOVEL_URL)
+def novelUpdate() -> list[str]:
+    response: requests.Response = requests.get(NOVEL_URL)
 
     if response.status_code != 200:
         return ["Novel update is not currently available"]
 
-    reply = []
+    reply: list[str] = []
 
-    content = response.content.decode("utf-8")
-    data_dict = json.loads(content)
+    content: str = response.content.decode("utf-8")
+    data_dict: dict[str, list[str, str]] = json.loads(content)
 
     for novel, (title, url) in data_dict.items():
         reply.append(f"{novel}: \n{title}\n{url}")
@@ -88,15 +79,16 @@ def novelUpdate():
     return reply
 
 
-def restore():
-    client = docker.DockerClient("unix:///var/run/docker.sock")
-    containers = client.containers.list(all=True, filters={"status": "exited"})
-    exited_containers = [
+def restore() -> list[str]:
+    client: docker.DockerClient = docker.DockerClient("unix:///var/run/docker.sock")
+    containers: list = client.containers.list(all=True, filters={"status": "exited"})
+    exited_containers: list = [
         container
         for container in containers
         if container.attrs["HostConfig"]["RestartPolicy"]["Name"] != "unless-stopped"
     ]
-    reply = []
+
+    reply: list[str] = []
 
     for container in exited_containers:
         container.start()
@@ -108,25 +100,35 @@ def restore():
     return reply
 
 
-# Booting up all containers that were not turned off manually
-restore()
-
-
 @bot.message_handler(commands=["info"])
-def handle_info_command(message):
+def handle_info_command(message) -> None:
     bot.reply_to(message, MarkdownV2Encode(containerUsage()), parse_mode="MarkdownV2")
 
 
 @bot.message_handler(commands=["novel"])
-def handle_novel_update_command(message):
+def handle_novel_update_command(message) -> None:
     bot.reply_to(message, DefaultEncode(novelUpdate()), parse_mode=None)
 
 
 @bot.message_handler(commands=["restore"])
-def handle_container_restore_command(message):
+def handle_container_restore_command(message) -> None:
     bot.reply_to(message, MarkdownV2Encode(restore()), parse_mode="MarkdownV2")
 
 
-if __name__ == "__main__":
-    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Telegram bot started")
+def main() -> None:
+    # Booting up all containers that were not turned off manually
+    restore()
+
+    commands: list[telebot.types.BotCommand] = [
+        telebot.types.BotCommand("info", "Get server usage status"),
+        telebot.types.BotCommand("novel", "Get novel latest chapters"),
+        telebot.types.BotCommand("restore", "Restart all exited containers"),
+    ]
+
+    bot.set_my_commands(commands)
     bot.infinity_polling(logger_level=None)
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Telegram bot started")
+
+
+if __name__ == "__main__":
+    main()
