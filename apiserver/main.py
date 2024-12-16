@@ -28,6 +28,7 @@ currency_status: dict[str, str] = dict()
 commodity_status: dict[str, str] = dict()
 
 UPDATE_INTERVAL: int = 12
+TREND_ENDING = "_TREND"
 
 STOCKS: str = "AAPL GOOG NVDA TSLA"
 INDICES: str = "^IXIC ^GSPC 000001.SS"
@@ -103,7 +104,7 @@ def load_cache(cache_path: str, symbols: str) -> dict[str, str]:
             cache: dict[str, str] = json.load(file)
 
             for ticker, value in cache.items():
-                if ticker.removesuffix("_TREAD") in symbols:
+                if ticker.removesuffix(TREND_ENDING) in symbols:
                     result[ticker] = value
 
     return result
@@ -205,7 +206,7 @@ def get_info_by_ticker(tickers) -> dict[str, str]:
             price, old_price = get_ticker_prices(ticker)
             trend = ((price - old_price) / old_price) * 100
             info[ticker] = format_number(price)
-            info[ticker + "_TREND"] = format_number(trend)
+            info[ticker + TREND_ENDING] = format_number(trend)
 
         except Exception as e:
             print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
