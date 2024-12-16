@@ -169,7 +169,7 @@ def get_xui_status() -> dict[str, str]:
 
 def update_xui_status() -> None:
     global xui_status
-    xui_status: dict[str, str] = {
+    xui_status = {
         "speed": 0,
         "usage": 0,
         "online": "-",
