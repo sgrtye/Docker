@@ -220,10 +220,22 @@ def get_info_by_ticker(tickers) -> dict[str, str]:
 
 def update_status(symbols) -> None:
     info = get_info_by_ticker(symbols)
-
     MAPPING[symbols][0].update(info)
-    with open(MAPPING[symbols][1], "w") as file:
-        json.dump(MAPPING[symbols][0], file)
+
+
+def save_status() -> None:
+    for symbols in MAPPING.keys():
+        with open(MAPPING[symbols][1], "w") as file:
+            json.dump(MAPPING[symbols][0], file)
+
+
+def handle_sigterm(signum, frame) -> None:
+    save_status()
+    print(
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "All status saved before exiting",
+    )
+    raise SystemExit(0)
 
 
 def main() -> None:
@@ -248,12 +260,13 @@ def main() -> None:
     schedule.every().hour.at(f":{str(UPDATE_INTERVAL * 4).zfill(2)}").do(
         update_status, symbols=COMMODITIES
     )
+    schedule.every().day.at("10:24").do(save_status)
 
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "API server started")
 
     while True:
         schedule.run_pending()
-        time.sleep(10)
+        time.sleep(60)
 
 
 if __name__ == "__main__":
