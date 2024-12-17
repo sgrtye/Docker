@@ -2,6 +2,7 @@ import os
 import time
 import json
 import math
+import signal
 import random
 import pandas
 import yfinance
@@ -240,6 +241,7 @@ def handle_sigterm(signum, frame) -> None:
 
 def main() -> None:
     load_all_cache()
+    signal.signal(signal.SIGTERM, handle_sigterm)
 
     api_thread = threading.Thread(target=start_api_server)
     api_thread.daemon = True
