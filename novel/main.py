@@ -114,11 +114,15 @@ def get_url_html(url, proxy=None):
 
     except Exception as e:
         if proxy is None:
-            print("The following error occurred when using native ip")
+            print("Error occurred when using native ip")
+            return None
         raise e
 
 
 def extract_book_title(html):
+    if html is None:
+        return None
+
     try:
         tree = etree.HTML(html, parser=None)
         div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
@@ -228,7 +232,8 @@ if __name__ == "__main__":
                         if title == titles.get(books[i][1] + "previous"):
                             break
 
-                        if title != extract_book_title(get_url_html(url)):
+                        verified_title = extract_book_title(get_url_html(url))
+                        if verified_title is not None and title != verified_title:
                             break
 
                         if titles.get(books[i][1]) is not None:
