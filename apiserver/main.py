@@ -210,7 +210,8 @@ def get_info_by_ticker(tickers) -> dict[str, str]:
             info[ticker + TREND_ENDING] = format_number(trend)
 
         except Exception as e:
-            print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
+            print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            print(f"Error {repr(e)} occurred on line {e.__traceback__.tb_lineno}")
 
     if info:
         global last_updated_time
