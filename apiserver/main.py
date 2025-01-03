@@ -147,7 +147,7 @@ def xui_login() -> None:
 
 
 def get_xui_info(path_suffix: str) -> dict:
-    while info := xui_session.post(XUI_URL + path_suffix).status_code != 200:
+    while (info := xui_session.post(XUI_URL + path_suffix)).status_code != 200:
         xui_login()
         time.sleep(10)
 
