@@ -172,12 +172,15 @@ def get_xui_status() -> dict[str, str]:
 def update_xui_status() -> None:
     global xui_status
     xui_status = {
-        "speed": 0,
-        "usage": 0,
+        "speed": -1,
+        "usage": -1,
         "online": "-",
     }
 
-    xui_status.update(get_xui_status())
+    try:
+        xui_status.update(get_xui_status())
+    except Exception:
+        pass
 
 
 def get_ticker_prices(symbol) -> tuple[float, float]:
