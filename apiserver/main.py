@@ -140,21 +140,23 @@ def bytes_to_speed(bytes: int, decimal_place: int = 2) -> str:
 
 
 def xui_login() -> None:
-    if xui_session.post(XUI_URL + "/server/status").status_code != 200:
-        xui_session.post(
-            XUI_URL + "/login",
-            data={"username": XUI_USERNAME, "password": XUI_PASSWORD},
-        )
+    xui_session.post(
+        XUI_URL + "/login",
+        data={"username": XUI_USERNAME, "password": XUI_PASSWORD},
+    )
+
+
+def get_xui_info(path_suffix: str) -> dict:
+    while info := xui_session.post(XUI_URL + path_suffix).status_code != 200:
+        xui_login()
+        time.sleep(10)
+
+    return info.json()
 
 
 def get_xui_status() -> dict[str, str]:
-    xui_login()
-
-    status = xui_session.post(XUI_URL + "/server/status")
-    online = xui_session.post(XUI_URL + "/xui/inbound/onlines")
-
-    status: dict = status.json()
-    online: dict[str] = online.json()
+    status: dict = get_xui_info("/server/status")
+    online: dict[str] = get_xui_info("/xui/inbound/onlines")
 
     online_count: int = len(online["obj"]) if online["obj"] else 0
     online_name: str = random.choice(online["obj"]) if online_count > 0 else "-"
