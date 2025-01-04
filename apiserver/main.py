@@ -57,6 +57,7 @@ tickers = yfinance.Tickers(
 )
 
 last_updated_time: float = time.time()
+xui_rate_limit_time: float = time.time()
 
 
 class apiHandler(http.server.BaseHTTPRequestHandler):
@@ -140,6 +141,12 @@ def bytes_to_speed(bytes: int, decimal_place: int = 2) -> str:
 
 
 def xui_login() -> None:
+    global xui_rate_limit_time
+
+    if (sleep_time := 5 - (time.time() - xui_rate_limit_time)) > 0:
+        time.sleep(sleep_time)
+    xui_rate_limit_time = time.time()
+
     xui_session.post(
         XUI_URL + "/login",
         data={"username": XUI_USERNAME, "password": XUI_PASSWORD},
@@ -149,7 +156,6 @@ def xui_login() -> None:
 def get_xui_info(path_suffix: str) -> dict:
     while (info := xui_session.post(XUI_URL + path_suffix)).status_code != 200:
         xui_login()
-        time.sleep(10)
 
     return info.json()
 
