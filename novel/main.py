@@ -11,14 +11,11 @@ import socketserver
 from lxml import etree
 from curl_cffi import requests
 
-IP_PATH = "/config/ip.txt"
-BOOK_PATH = "/config/book.txt"
-CACHE_PATH = "/cache/cache.json"
 
-BOOK_URL = os.environ.get("BOOK_URL")
-PROXY_URL = os.environ.get("PROXY_URL")
-TELEBOT_TOKEN = os.environ.get("TELEBOT_TOKEN")
-TELEBOT_USER_ID = os.environ.get("TELEBOT_USER_ID")
+BOOK_URL: str | None = os.environ.get("BOOK_URL")
+PROXY_URL: str | None = os.environ.get("PROXY_URL")
+TELEBOT_TOKEN: str | None = os.environ.get("TELEBOT_TOKEN")
+TELEBOT_USER_ID: str | None = os.environ.get("TELEBOT_USER_ID")
 
 if (
     TELEBOT_TOKEN is None
@@ -29,10 +26,12 @@ if (
     print("Environment variables not fulfilled")
     raise SystemExit
 
-titles, last_updated_time, loop_time = None, None, None
+IP_PATH: str = "/config/ip.txt"
+BOOK_PATH: str = "/config/book.txt"
+CACHE_PATH: str = "/cache/cache.json"
 
 
-def load_unavailable_ips():
+def load_unavailable_ips() -> list[str]:
     unavailable_ips = []
 
     with open(IP_PATH, "r") as file:
@@ -44,7 +43,7 @@ def load_unavailable_ips():
     return unavailable_ips
 
 
-def load_proxies():
+def load_proxies() -> list[tuple[str, str, str, str]]:
     try:
         proxies = []
         response = requests.get(PROXY_URL)
@@ -73,7 +72,7 @@ def load_proxies():
         raise SystemExit
 
 
-def load_books():
+def load_books() -> list[tuple[str, str]]:
     books = []
 
     with open(BOOK_PATH, "r") as file:
@@ -89,7 +88,7 @@ def load_books():
     return books
 
 
-def load_cache():
+def load_cache() -> dict[str, str]:
     titles = dict()
 
     if os.path.exists(CACHE_PATH):
@@ -106,7 +105,7 @@ def load_cache():
     return titles
 
 
-def get_url_html(url, proxy=None):
+def get_url_html(url, proxy=None) -> str | None:
     try:
         request = requests.get(url, impersonate="chrome", proxies=proxy)
         request.encoding = "gbk"
@@ -119,7 +118,7 @@ def get_url_html(url, proxy=None):
         raise e
 
 
-def extract_book_title(html):
+def extract_book_title(html) -> str | None:
     if html is None:
         return None
 
@@ -134,12 +133,12 @@ def extract_book_title(html):
         raise e
 
 
-def save_titles():
+def save_titles() -> None:
     with open(CACHE_PATH, "w") as file:
         json.dump(titles, file)
 
 
-def handle_sigterm(signum, frame):
+def handle_sigterm(signum, frame) -> None:
     save_titles()
     print(
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -149,11 +148,11 @@ def handle_sigterm(signum, frame):
 
 
 class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
-    def log_message(self, format, *args):
+    def log_message(self, format, *args) -> None:
         # Override the log_message method to do nothing
         pass
 
-    def do_GET(self):
+    def do_GET(self) -> None:
         if self.path == "/update":
             self.send_response(200)
             self.send_header("Content-type", "application/json")
@@ -182,7 +181,7 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(b"Not Found")
 
 
-def start_api_server():
+def start_api_server() -> None:
     with socketserver.TCPServer(("0.0.0.0", 80), HealthCheckHandler) as httpd:
         httpd.serve_forever()
 
@@ -193,17 +192,15 @@ if __name__ == "__main__":
     proxies = load_proxies()
 
     books = load_books()
-    i = 0
-    j = 0
+    i: int = 0
+    j: int = 0
     last_updated_time = time.time()
     loop_time = len(books) * 5 * 60
     sleep_interval = loop_time / len(books)
 
     titles = load_cache()
 
-    api_thread = threading.Thread(target=start_api_server)
-    api_thread.daemon = True
-    api_thread.start()
+    threading.Thread(target=start_api_server, daemon=True).start()
 
     signal.signal(signal.SIGTERM, handle_sigterm)
 
@@ -218,7 +215,7 @@ if __name__ == "__main__":
 
                 ip, port, username, password = proxies[j]
                 # proxy = f"{username}:{password}@{ip}:{port}"
-                proxy = {
+                proxy: dict[str, str] = {
                     "http": f"http://{username}:{password}@{ip}:{port}",
                     "https": f"http://{username}:{password}@{ip}:{port}",
                 }
