@@ -155,7 +155,7 @@ def xui_login() -> None:
 
 def get_xui_info(path_suffix: str) -> dict:
     while (info := xui_session.post(XUI_URL + path_suffix)).status_code != 200:
-        xui_login()
+        threading.Thread(target=xui_login, daemon=True).start()
 
     return info.json()
 
@@ -255,9 +255,7 @@ def main() -> None:
     load_all_cache()
     signal.signal(signal.SIGTERM, handle_sigterm)
 
-    api_thread = threading.Thread(target=start_api_server)
-    api_thread.daemon = True
-    api_thread.start()
+    threading.Thread(target=start_api_server, daemon=True).start()
 
     schedule.every().hour.at(f":{str(UPDATE_INTERVAL * 0).zfill(2)}").do(
         update_status, symbols=STOCKS
