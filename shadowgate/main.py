@@ -1,6 +1,7 @@
 import os
 import aiohttp
 from aiohttp import web
+from functools import partial
 from xui import *
 
 
@@ -55,6 +56,10 @@ async def forward_request(request, target_url, upgrade_connection=False, timeout
             headers["Connection"] = "upgrade"
             headers["Upgrade"] = request.headers.get("Upgrade", "")
 
+        print(f"Forwarding {request.method} request to {target_url}")
+        print(f"Request headers: {headers}")
+        print(f"Request body: {await request.text()}")
+
         try:
             async with session.request(
                 method=request.method,
@@ -63,12 +68,14 @@ async def forward_request(request, target_url, upgrade_connection=False, timeout
                 data=await request.read(),
                 timeout=timeout,
             ) as response:
+
                 resp_headers = {
                     key: value
                     for key, value in response.headers.items()
                     if key.lower() != "transfer-encoding"
                 }
                 body = await response.read()
+
                 return web.Response(
                     status=response.status, headers=resp_headers, body=body
                 )
@@ -80,11 +87,12 @@ async def forward_request(request, target_url, upgrade_connection=False, timeout
 async def start_proxy(inbounds: list[dict[str, str]]):
     app = web.Application()
     app.router.add_route("*", PROXY_PATH + "{tail:.*}", forward_to_xui)
+
     for inbound in inbounds:
         app.router.add_route(
             "*",
             inbound["path"] + "{tail:.*}",
-            lambda request: forward_to_proxy(request, inbound["port"]),
+            partial(forward_to_proxy, port=inbound["port"]),
         )
 
     return app
