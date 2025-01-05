@@ -1,7 +1,7 @@
 import os
 import aiohttp
 from aiohttp import web
-from functools import partial
+
 from xui import *
 
 
@@ -56,10 +56,6 @@ async def forward_request(request, target_url, upgrade_connection=False, timeout
             headers["Connection"] = "upgrade"
             headers["Upgrade"] = request.headers.get("Upgrade", "")
 
-        print(f"Forwarding {request.method} request to {target_url}")
-        print(f"Request headers: {headers}")
-        print(f"Request body: {await request.text()}")
-
         try:
             async with session.request(
                 method=request.method,
@@ -76,12 +72,19 @@ async def forward_request(request, target_url, upgrade_connection=False, timeout
                 }
                 body = await response.read()
 
+                print(f"Response from {target_url}: {response.status}")
+                print(f"Response headers: {resp_headers}")
+                print(f"Response body: {body[:500]}")
+
                 return web.Response(
                     status=response.status, headers=resp_headers, body=body
                 )
 
         except Exception as e:
-            return web.Response(status=500, text=f"Error while forwarding: {str(e)}")
+            print(f"Error while forwarding request to {target_url}: {e}")
+            return web.Response(
+                status=500, text=f"Error while forwarding request: {str(e)}"
+            )
 
 
 async def start_proxy(inbounds: list[dict[str, str]]):
