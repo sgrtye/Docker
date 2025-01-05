@@ -1,7 +1,7 @@
 import os
 import aiohttp
 from aiohttp import web
-
+from functools import partial
 from xui import *
 
 
