@@ -70,6 +70,13 @@ async def forward_request(request, target_url, upgrade_connection=False, timeout
                     for key, value in response.headers.items()
                     if key.lower() != "transfer-encoding"
                 }
+                resp_headers.update(
+                    {
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE",
+                        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                    }
+                )
                 body = await response.read()
 
                 print(f"Response from {target_url}: {response.status}")
