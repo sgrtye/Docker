@@ -24,7 +24,7 @@ if (
 
 
 async def forward_to_xui(request):
-    target_url = f"{PROXY_URL}:{PROXY_PORT}{PROXY_PATH}{request.path_qs}"
+    target_url = f"{PROXY_URL}:{PROXY_PORT}{request.path_qs}"
     return await forward_request(request, target_url)
 
 
@@ -66,8 +66,7 @@ async def forward_request(request, target_url, upgrade_connection=False, timeout
                 resp_headers = {
                     key: value
                     for key, value in response.headers.items()
-                    if key.lower()
-                    != "transfer-encoding"  # Avoid issues with chunked transfer
+                    if key.lower() != "transfer-encoding"
                 }
                 body = await response.read()
                 return web.Response(
