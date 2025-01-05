@@ -1,3 +1,4 @@
 httpx
-aiohttp
+uvicorn
+fastapi
 requests

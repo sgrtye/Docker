@@ -1,8 +1,10 @@
 import os
-import httpx
-from aiohttp import web
-from functools import partial
+import uvicorn
 from xui import *
+from functools import partial
+from httpx import AsyncClient
+from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request, Response
 
 
 PROXY_URL: str | None = os.environ.get("PROXY_URL")
@@ -24,19 +26,15 @@ if (
     raise SystemExit
 
 
-async def forward_to_xui(request):
-    target_url = f"{PROXY_URL}:{PROXY_PORT}{request.path_qs}"
-    return await forward_request(request, target_url)
+app = FastAPI()
 
 
-async def forward_to_proxy(request, port: str):
-    target_url = f"{PROXY_URL}:{port}{request.path_qs}"
-    return await forward_request(
-        request, target_url, upgrade_connection=True, timeout=300
-    )
-
-
-async def forward_request(request, target_url, upgrade_connection=False, timeout=None):
+async def forward_request(
+    request: Request,
+    target_url: str,
+    upgrade_connection: bool = False,
+    timeout: int = None,
+):
     headers = {
         key: value
         for key, value in request.headers.items()
@@ -45,8 +43,10 @@ async def forward_request(request, target_url, upgrade_connection=False, timeout
     headers.update(
         {
             "Host": request.headers.get("Host", ""),
-            "X-Real-IP": request.remote,
-            "X-Forwarded-For": request.headers.get("X-Forwarded-For", request.remote),
+            "X-Real-IP": request.client.host,
+            "X-Forwarded-For": request.headers.get(
+                "X-Forwarded-For", request.client.host
+            ),
         }
     )
     if upgrade_connection:
@@ -54,12 +54,13 @@ async def forward_request(request, target_url, upgrade_connection=False, timeout
         headers["Upgrade"] = request.headers.get("Upgrade", "")
 
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with AsyncClient(timeout=timeout) as client:
+            body = await request.body()
             response = await client.request(
                 method=request.method,
                 url=target_url,
                 headers=headers,
-                content=await request.read(),
+                content=body,
             )
 
             resp_headers = {
@@ -68,40 +69,54 @@ async def forward_request(request, target_url, upgrade_connection=False, timeout
                 if key.lower() != "transfer-encoding"
             }
 
-            body = response.content
-
             print(f"Response from {target_url}: {response.status_code}")
             print(f"Response headers: {resp_headers}")
-            print(f"Response body: {body[:500]}")
+            print(f"Response body: {response.text[:500]}")
 
-            return web.Response(
-                status=response.status_code, headers=resp_headers, body=body
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers=resp_headers,
             )
 
     except Exception as e:
         print(f"Error while forwarding request to {target_url}: {e}")
-        return web.Response(
-            status=500, text=f"Error while forwarding request: {str(e)}"
+        return JSONResponse(
+            content={"error": f"Error while forwarding request: {str(e)}"},
+            status_code=500,
         )
 
 
-async def start_proxy(inbounds: list[dict[str, str]]):
-    app = web.Application()
-    app.router.add_route("*", PROXY_PATH + "{tail:.*}", forward_to_xui)
+@app.api_route(
+    f"{PROXY_PATH}/{{tail:path}}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"]
+)
+async def forward_to_xui(request: Request, tail: str):
+    target_url = f"{PROXY_URL}:{PROXY_PORT}/{tail}"
+    return await forward_request(request, target_url)
 
+
+async def forward_to_proxy(request: Request, tail: str, port: str):
+    target_url = f"{PROXY_URL}:{port}/{tail}"
+    return await forward_request(
+        request, target_url, upgrade_connection=True, timeout=300
+    )
+
+
+def create_inbound_routes(inbounds):
     for inbound in inbounds:
-        app.router.add_route(
-            "*",
-            inbound["path"] + "{tail:.*}",
-            partial(forward_to_proxy, port=inbound["port"]),
+        app.add_api_route(
+            path=f"{inbound['path']}/{{tail:path}}",
+            endpoint=partial(forward_to_proxy, port=inbound["port"]),
+            methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
         )
-
-    return app
 
 
 if __name__ == "__main__":
     inbounds = get_inbounds(
         f"{PROXY_URL}:{PROXY_PORT}{PROXY_PATH}", XUI_USERNAME, XUI_PASSWORD
     )
-    print(inbounds)
-    web.run_app(start_proxy(inbounds), host="0.0.0.0", port=80)
+    print(f"Loaded inbounds: {inbounds}")
+
+    create_inbound_routes(inbounds)
+
+    uvicorn.run(app, host="0.0.0.0", port=80)
