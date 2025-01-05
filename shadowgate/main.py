@@ -1,5 +1,5 @@
 import os
-import aiohttp
+import httpx
 from aiohttp import web
 from functools import partial
 from xui import *
@@ -37,61 +37,52 @@ async def forward_to_proxy(request, port: str):
 
 
 async def forward_request(request, target_url, upgrade_connection=False, timeout=None):
-    async with aiohttp.ClientSession() as session:
-        headers = {
-            key: value
-            for key, value in request.headers.items()
-            if key.lower() not in ["host", "connection", "upgrade"]
+    headers = {
+        key: value
+        for key, value in request.headers.items()
+        if key.lower() not in ["host", "connection", "upgrade"]
+    }
+    headers.update(
+        {
+            "Host": request.headers.get("Host", ""),
+            "X-Real-IP": request.remote,
+            "X-Forwarded-For": request.headers.get("X-Forwarded-For", request.remote),
         }
-        headers.update(
-            {
-                "Host": request.headers.get("Host", ""),
-                "X-Real-IP": request.remote,
-                "X-Forwarded-For": request.headers.get(
-                    "X-Forwarded-For", request.remote
-                ),
-            }
-        )
-        if upgrade_connection:
-            headers["Connection"] = "upgrade"
-            headers["Upgrade"] = request.headers.get("Upgrade", "")
+    )
+    if upgrade_connection:
+        headers["Connection"] = "upgrade"
+        headers["Upgrade"] = request.headers.get("Upgrade", "")
 
-        try:
-            async with session.request(
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.request(
                 method=request.method,
                 url=target_url,
                 headers=headers,
-                data=await request.read(),
-                timeout=timeout,
-            ) as response:
-
-                resp_headers = {
-                    key: value
-                    for key, value in response.headers.items()
-                    if key.lower() != "transfer-encoding"
-                }
-                resp_headers.update(
-                    {
-                        "Access-Control-Allow-Origin": "*",
-                        "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE",
-                        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-                    }
-                )
-                body = await response.read()
-
-                print(f"Response from {target_url}: {response.status}")
-                print(f"Response headers: {resp_headers}")
-                print(f"Response body: {body[:500]}")
-
-                return web.Response(
-                    status=response.status, headers=resp_headers, body=body
-                )
-
-        except Exception as e:
-            print(f"Error while forwarding request to {target_url}: {e}")
-            return web.Response(
-                status=500, text=f"Error while forwarding request: {str(e)}"
+                content=await request.read(),
             )
+
+            resp_headers = {
+                key: value
+                for key, value in response.headers.items()
+                if key.lower() != "transfer-encoding"
+            }
+
+            body = response.content
+
+            print(f"Response from {target_url}: {response.status_code}")
+            print(f"Response headers: {resp_headers}")
+            print(f"Response body: {body[:500]}")
+
+            return web.Response(
+                status=response.status_code, headers=resp_headers, body=body
+            )
+
+    except Exception as e:
+        print(f"Error while forwarding request to {target_url}: {e}")
+        return web.Response(
+            status=500, text=f"Error while forwarding request: {str(e)}"
+        )
 
 
 async def start_proxy(inbounds: list[dict[str, str]]):
