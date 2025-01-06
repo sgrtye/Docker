@@ -9,8 +9,8 @@ import pandas
 import asyncio
 import yfinance
 import datetime
+import aioschedule
 from fastapi import FastAPI
-import aioschedule as schedule
 from uvicorn import Config, Server
 from fastapi.responses import JSONResponse
 
@@ -164,7 +164,7 @@ async def xui_login() -> None:
 
 
 async def get_xui_info(path_suffix: str) -> dict:
-    while (info := xui_session.post(XUI_URL + path_suffix)).status_code != 200:
+    while (info := await xui_session.post(XUI_URL + path_suffix)).status_code != 200:
         await xui_login()
 
     return info.json()
@@ -201,7 +201,7 @@ async def update_xui_status() -> None:
         pass
 
 
-def get_ticker_prices(symbol) -> tuple[float, float]:
+def get_ticker_prices(symbol: str) -> tuple[float, float]:
     info = tickers.tickers[symbol].history(period="5d", interval="60m")
 
     latest_time: pandas.Timestamp = info.index.max()
@@ -219,7 +219,7 @@ def get_ticker_prices(symbol) -> tuple[float, float]:
     return (current_price, old_price)
 
 
-def get_info_by_ticker(tickers) -> dict[str, str]:
+def get_info_by_ticker(tickers: str) -> dict[str, str]:
     info: dict[str, str] = dict()
     tickers: list[str] = tickers.split(" ")
 
@@ -253,30 +253,37 @@ def save_status() -> None:
 
 
 async def start_api_server():
-    config = Config(app=app, host="0.0.0.0", port=80)
+    config = Config(app=app, host="0.0.0.0", port=80, log_level="critical")
     await Server(config).serve()
 
 
 async def update_finance_status() -> None:
-    schedule.every().hour.at(f":{str(UPDATE_INTERVAL * 0).zfill(2)}").do(
+    aioschedule.every().hour.at(f":{str(UPDATE_INTERVAL * 0).zfill(2)}").do(
         update_status, symbols=STOCKS
     )
-    schedule.every().hour.at(f":{str(UPDATE_INTERVAL * 1).zfill(2)}").do(
+    aioschedule.every().hour.at(f":{str(UPDATE_INTERVAL * 1).zfill(2)}").do(
         update_status, symbols=INDICES
     )
-    schedule.every().hour.at(f":{str(UPDATE_INTERVAL * 2).zfill(2)}").do(
+    aioschedule.every().hour.at(f":{str(UPDATE_INTERVAL * 2).zfill(2)}").do(
         update_status, symbols=CRYPTOS
     )
-    schedule.every().hour.at(f":{str(UPDATE_INTERVAL * 3).zfill(2)}").do(
+    aioschedule.every().hour.at(f":{str(UPDATE_INTERVAL * 3).zfill(2)}").do(
         update_status, symbols=CURRENCIES
     )
-    schedule.every().hour.at(f":{str(UPDATE_INTERVAL * 4).zfill(2)}").do(
+    aioschedule.every().hour.at(f":{str(UPDATE_INTERVAL * 4).zfill(2)}").do(
         update_status, symbols=COMMODITIES
     )
-    schedule.every().day.at("10:24").do(save_status)
+    aioschedule.every().day.at("10:24").do(save_status)
+
+    # while True:
+    #     await aioschedule.run_pending()
+    #     await asyncio.sleep(60)
 
     while True:
-        await schedule.run_pending()
+        try:
+            await aioschedule.run_pending()
+        except Exception as e:
+            print(f"Error in scheduler: {e}")
         await asyncio.sleep(60)
 
 
