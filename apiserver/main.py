@@ -180,7 +180,7 @@ async def get_xui_info(path_suffix: str) -> dict:
     while (info := await post_request(XUI_URL + path_suffix)).status_code != 200:
         await xui_login()
 
-    return info.json()
+    return info
 
 
 async def get_xui_status() -> dict[str, str]:
