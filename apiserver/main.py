@@ -2,12 +2,12 @@ import os
 import time
 import json
 import math
+import httpx
 import signal
 import random
 import pandas
 import asyncio
 import yfinance
-import requests
 import datetime
 from fastapi import FastAPI
 import aioschedule as schedule
@@ -52,7 +52,7 @@ MAPPING: dict[str, tuple[dict[str, str], str]] = {
     COMMODITIES: (commodity_status, COMMODITY_CACHE_PATH),
 }
 
-xui_session = requests.Session()
+xui_session: httpx.AsyncClient | None = None
 tickers = yfinance.Tickers(
     " ".join([STOCKS, INDICES, CRYPTOS, CURRENCIES, COMMODITIES])
 )
@@ -151,6 +151,19 @@ def bytes_to_speed(bytes: int, decimal_place: int = 2) -> str:
     return format_bytes(bytes, decimal_place) + "/s"
 
 
+async def create_session() -> None:
+    global xui_session
+    xui_session = httpx.AsyncClient()
+
+
+async def post_request(url: str, data: dict | None = None) -> dict:
+    if xui_session is None:
+        await create_session()
+
+    response = await xui_session.post(url, data=data)
+    return response.json()
+
+
 async def xui_login() -> None:
     global xui_rate_limit_time
 
@@ -158,14 +171,13 @@ async def xui_login() -> None:
         await asyncio.sleep(sleep_time)
     xui_rate_limit_time = time.time()
 
-    xui_session.post(
-        XUI_URL + "/login",
-        data={"username": XUI_USERNAME, "password": XUI_PASSWORD},
+    await post_request(
+        XUI_URL + "/login", {"username": XUI_USERNAME, "password": XUI_PASSWORD}
     )
 
 
 async def get_xui_info(path_suffix: str) -> dict:
-    while (info := xui_session.post(XUI_URL + path_suffix)).status_code != 200:
+    while (info := await post_request(XUI_URL + path_suffix)).status_code != 200:
         await xui_login()
 
     return info.json()
@@ -254,7 +266,7 @@ def save_status() -> None:
 
 
 async def start_api_server():
-    config = Config(app=app, host="127.0.0.1", port=80)
+    config = Config(app=app, host="0.0.0.0", port=80)
     await Server(config).serve()
 
 

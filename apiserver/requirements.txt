@@ -1,6 +1,6 @@
+httpx
 pandas
 fastapi
 uvicorn
-requests
 yfinance
 aioschedule
