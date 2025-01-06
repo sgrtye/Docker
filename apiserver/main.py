@@ -9,10 +9,11 @@ import pandas
 import asyncio
 import yfinance
 import datetime
-import aioschedule
 from fastapi import FastAPI
 from uvicorn import Config, Server
 from fastapi.responses import JSONResponse
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 XUI_URL: str | None = os.environ.get("XUI_URL")
 XUI_USERNAME: str | None = os.environ.get("XUI_USERNAME")
@@ -29,7 +30,6 @@ crypto_status: dict[str, str] = dict()
 currency_status: dict[str, str] = dict()
 commodity_status: dict[str, str] = dict()
 
-UPDATE_INTERVAL: int = 12
 TREND_ENDING: str = "_TREND"
 
 STOCKS: str = "AAPL GOOG NVDA TSLA"
@@ -257,34 +257,23 @@ async def start_api_server():
     await Server(config).serve()
 
 
-async def update_finance_status() -> None:
-    aioschedule.every().hour.at(f":{str(UPDATE_INTERVAL * 0).zfill(2)}").do(
-        update_status, symbols=STOCKS
-    )
-    aioschedule.every().hour.at(f":{str(UPDATE_INTERVAL * 1).zfill(2)}").do(
-        update_status, symbols=INDICES
-    )
-    aioschedule.every().hour.at(f":{str(UPDATE_INTERVAL * 2).zfill(2)}").do(
-        update_status, symbols=CRYPTOS
-    )
-    aioschedule.every().hour.at(f":{str(UPDATE_INTERVAL * 3).zfill(2)}").do(
-        update_status, symbols=CURRENCIES
-    )
-    aioschedule.every().hour.at(f":{str(UPDATE_INTERVAL * 4).zfill(2)}").do(
-        update_status, symbols=COMMODITIES
-    )
-    aioschedule.every().day.at("10:24").do(save_status)
+def schedule_yfinance_updates() -> None:
+    scheduler = AsyncIOScheduler()
+    interval = 3600 // len(MAPPING)
+    now = datetime.datetime.now()
 
-    # while True:
-    #     await aioschedule.run_pending()
-    #     await asyncio.sleep(60)
+    for i, symbol in enumerate(MAPPING.keys()):
+        start_time = now.replace(
+            minute=0, second=0, microsecond=0
+        ) + datetime.timedelta(seconds=interval * i)
 
-    while True:
-        try:
-            await aioschedule.run_pending()
-        except Exception as e:
-            print(f"Error in scheduler: {e}")
-        await asyncio.sleep(60)
+        scheduler.add_job(
+            update_status,
+            IntervalTrigger(hours=1, start_date=start_time),
+            args=[symbol],
+        )
+
+    scheduler.start()
 
 
 def handle_sigterm(signum, frame) -> None:
@@ -302,7 +291,8 @@ async def main() -> None:
 
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "API server started")
 
-    await asyncio.gather(start_api_server(), update_finance_status())
+    schedule_yfinance_updates()
+    await start_api_server()
 
 
 if __name__ == "__main__":
