@@ -72,9 +72,7 @@ NO_CACHE_HEADER = {
 @app.get("/health")
 async def health_endpoint():
     if time.time() - last_updated_time <= (3600 // len(MAPPING)) + 60:
-        return JSONResponse(
-            content={"message": "OK"}, status_code=200, headers=NO_CACHE_HEADER
-        )
+        return JSONResponse(content={"message": "OK"}, headers=NO_CACHE_HEADER)
     else:
         return JSONResponse(
             content={"message": "Yahoo finance info not up to date"},
@@ -152,20 +150,21 @@ def bytes_to_speed(bytes: int, decimal_place: int = 2) -> str:
 
 
 async def xui_login() -> None:
-    global xui_rate_limit_time
-
-    if (sleep_time := 5 - (time.time() - xui_rate_limit_time)) > 0:
-        await asyncio.sleep(sleep_time)
-    xui_rate_limit_time = time.time()
+    # Rate limit to every 5 seconds
+    if time.time() - xui_rate_limit_time < 5:
+        return
 
     await xui_session.post(
         XUI_URL + "/login", data={"username": XUI_USERNAME, "password": XUI_PASSWORD}
     )
+    global xui_rate_limit_time
+    xui_rate_limit_time = time.time()
 
 
 async def get_xui_info(path_suffix: str) -> dict:
-    while (info := await xui_session.post(XUI_URL + path_suffix)).status_code != 200:
+    if (info := await xui_session.post(XUI_URL + path_suffix)).status_code != 200:
         await xui_login()
+        info = await xui_session.post(XUI_URL + path_suffix)
 
     return info.json()
 
@@ -197,6 +196,7 @@ async def update_xui_status() -> None:
 
     try:
         xui_status.update(await get_xui_status())
+    # Exception handed by displaying the above default values
     except Exception:
         pass
 
@@ -241,7 +241,7 @@ def get_info_by_ticker(tickers: str) -> dict[str, str]:
     return info
 
 
-def update_status(symbols) -> None:
+def update_status(symbols: str) -> None:
     info = get_info_by_ticker(symbols)
     MAPPING[symbols][0].update(info)
 
@@ -252,7 +252,7 @@ def save_status() -> None:
             json.dump(MAPPING[symbols][0], file)
 
 
-async def start_api_server():
+async def start_api_server() -> None:
     config = Config(app=app, host="0.0.0.0", port=80, log_level="critical")
     await Server(config).serve()
 
