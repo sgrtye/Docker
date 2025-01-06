@@ -9,6 +9,7 @@ import pandas
 import asyncio
 import yfinance
 import datetime
+import platform
 from fastapi import FastAPI
 from uvicorn import Config, Server
 from fastapi.responses import JSONResponse
@@ -196,7 +197,7 @@ async def update_xui_status() -> None:
 
     try:
         xui_status.update(await get_xui_status())
-    # Exception handed by displaying the above default values
+    # Exception handled by displaying the above default values
     except Exception:
         pass
 
@@ -289,7 +290,17 @@ def handle_sigterm(signum, frame) -> None:
 
 async def main() -> None:
     load_all_cache()
-    signal.signal(signal.SIGTERM, handle_sigterm)
+
+    match platform.system():
+        case "Linux":
+            asyncio.get_running_loop().add_signal_handler(
+                signal.SIGTERM, handle_sigterm
+            )
+            print("Signal handler for SIGTERM is registered.")
+
+        case _:
+            print("Signal handler registration skipped.")
+            pass
 
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "API server started")
 
