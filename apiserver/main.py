@@ -151,6 +151,7 @@ def bytes_to_speed(bytes: int, decimal_place: int = 2) -> str:
 
 
 async def xui_login() -> None:
+    global xui_rate_limit_time
     # Rate limit to every 5 seconds
     if time.time() - xui_rate_limit_time < 5:
         return
@@ -158,7 +159,6 @@ async def xui_login() -> None:
     await xui_session.post(
         XUI_URL + "/login", data={"username": XUI_USERNAME, "password": XUI_PASSWORD}
     )
-    global xui_rate_limit_time
     xui_rate_limit_time = time.time()
 
 
