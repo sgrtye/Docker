@@ -21,7 +21,7 @@ XUI_PASSWORD: str | None = os.environ.get("XUI_PASSWORD")
 
 if XUI_URL is None or XUI_USERNAME is None or XUI_PASSWORD is None:
     print("Environment variables not fulfilled")
-    raise SystemExit
+    raise SystemExit(0)
 
 xui_status: dict[str, str] = dict()
 stock_status: dict[str, str] = dict()
@@ -71,7 +71,7 @@ NO_CACHE_HEADER = {
 
 @app.get("/health")
 async def health_endpoint():
-    if time.time() - last_updated_time < (UPDATE_INTERVAL + 1) * 60:
+    if time.time() - last_updated_time <= (3600 // len(MAPPING)) + 60:
         return JSONResponse(
             content={"message": "OK"}, status_code=200, headers=NO_CACHE_HEADER
         )
@@ -261,6 +261,8 @@ def schedule_yfinance_updates() -> None:
     scheduler = AsyncIOScheduler()
     interval = 3600 // len(MAPPING)
     now = datetime.datetime.now()
+
+    scheduler.add_job(save_status, IntervalTrigger(days=1))
 
     for i, symbol in enumerate(MAPPING.keys()):
         start_time = now.replace(
