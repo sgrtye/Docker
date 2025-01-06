@@ -1,4 +1,6 @@
 pandas
+fastapi
+uvicorn
 requests
-schedule
 yfinance
+aioschedule
