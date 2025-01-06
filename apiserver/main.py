@@ -52,7 +52,7 @@ MAPPING: dict[str, tuple[dict[str, str], str]] = {
     COMMODITIES: (commodity_status, COMMODITY_CACHE_PATH),
 }
 
-xui_session: httpx.AsyncClient | None = None
+xui_session = httpx.AsyncClient()
 tickers = yfinance.Tickers(
     " ".join([STOCKS, INDICES, CRYPTOS, CURRENCIES, COMMODITIES])
 )
@@ -151,19 +151,6 @@ def bytes_to_speed(bytes: int, decimal_place: int = 2) -> str:
     return format_bytes(bytes, decimal_place) + "/s"
 
 
-async def create_session() -> None:
-    global xui_session
-    xui_session = httpx.AsyncClient()
-
-
-async def post_request(url: str, data: dict | None = None) -> dict:
-    if xui_session is None:
-        await create_session()
-
-    response = await xui_session.post(url, data=data)
-    return response.json()
-
-
 async def xui_login() -> None:
     global xui_rate_limit_time
 
@@ -171,16 +158,16 @@ async def xui_login() -> None:
         await asyncio.sleep(sleep_time)
     xui_rate_limit_time = time.time()
 
-    await post_request(
-        XUI_URL + "/login", {"username": XUI_USERNAME, "password": XUI_PASSWORD}
+    await xui_session.post(
+        XUI_URL + "/login", data={"username": XUI_USERNAME, "password": XUI_PASSWORD}
     )
 
 
 async def get_xui_info(path_suffix: str) -> dict:
-    while (info := await post_request(XUI_URL + path_suffix)).status_code != 200:
+    while (info := xui_session.post(XUI_URL + path_suffix)).status_code != 200:
         await xui_login()
 
-    return info
+    return info.json()
 
 
 async def get_xui_status() -> dict[str, str]:
