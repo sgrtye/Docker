@@ -1,10 +1,13 @@
 import os
-import uvicorn
+import asyncio
+import datetime
 from xui import *
 from functools import partial
 from httpx import AsyncClient
-from fastapi.responses import JSONResponse
+from uvicorn import Config, Server
 from fastapi import FastAPI, Request, Response
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 
 PROXY_URL: str | None = os.environ.get("PROXY_URL")
@@ -23,100 +26,112 @@ if (
     or XUI_PASSWORD is None
 ):
     print("Environment variables not fulfilled")
-    raise SystemExit
+    raise SystemExit(0)
 
 
+REQUEST_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
 app = FastAPI()
+client = AsyncClient(timeout=300.0)
 
 
-async def forward_request(
-    request: Request,
-    target_url: str,
-    upgrade_connection: bool = False,
-    timeout: int = None,
-):
-    headers = {
-        key: value
-        for key, value in request.headers.items()
-        if key.lower() not in ["host", "connection", "upgrade"]
-    }
-    headers.update(
-        {
-            "Host": request.headers.get("Host", ""),
-            "X-Real-IP": request.client.host,
-            "X-Forwarded-For": request.headers.get(
-                "X-Forwarded-For", request.client.host
-            ),
-        }
+async def forward_to_dashboard(
+    request: Request, tail: str, proxy_path: str
+) -> Response:
+    target_url = f"{PROXY_URL}:{PROXY_PORT}{proxy_path}{tail}"
+    print(f"Request to {target_url} forwarded to dashboard")
+
+    forwarded_request = client.build_request(
+        method=request.method,
+        url=target_url,
+        headers=dict(request.headers),
+        content=await request.body(),
+        params=request.query_params,
     )
-    if upgrade_connection:
-        headers["Connection"] = "upgrade"
-        headers["Upgrade"] = request.headers.get("Upgrade", "")
 
-    try:
-        async with AsyncClient(timeout=timeout) as client:
-            body = await request.body()
-            response = await client.request(
-                method=request.method,
-                url=target_url,
-                headers=headers,
-                content=body,
-            )
+    forwarded_response = await client.send(forwarded_request)
 
-            resp_headers = {
-                key: value
-                for key, value in response.headers.items()
-                if key.lower() != "transfer-encoding"
-            }
+    response_content = await forwarded_response.aread()
+    response_headers = dict(forwarded_response.headers)
+    response_headers.pop("content-length", None)
+    response_headers.pop("content-encoding", None)
 
-            print(f"Response from {target_url}: {response.status_code}")
-            print(f"Response headers: {resp_headers}")
-            print(f"Response body: {response.text[:500]}")
-
-            return Response(
-                content=response.content,
-                status_code=response.status_code,
-                headers=resp_headers,
-            )
-
-    except Exception as e:
-        print(f"Error while forwarding request to {target_url}: {e}")
-        return JSONResponse(
-            content={"error": f"Error while forwarding request: {str(e)}"},
-            status_code=500,
-        )
+    return Response(
+        content=response_content,
+        status_code=forwarded_response.status_code,
+        headers=response_headers,
+    )
 
 
-@app.api_route(
-    f"{PROXY_PATH}/{{tail:path}}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"]
-)
-async def forward_to_xui(request: Request, tail: str):
-    target_url = f"{PROXY_URL}:{PROXY_PORT}/{tail}"
-    return await forward_request(request, target_url)
-
-
-async def forward_to_proxy(request: Request, tail: str, port: str):
+async def forward_to_proxy(request: Request, tail: str, port: str) -> Response:
     target_url = f"{PROXY_URL}:{port}/{tail}"
-    return await forward_request(
-        request, target_url, upgrade_connection=True, timeout=300
+    print(f"Request to {target_url} forwarded to proxy")
+    return Response(content="Hello World", status_code=200)
+
+
+def create_inbound_routes() -> None:
+    inbounds = get_inbounds(
+        f"{PROXY_URL}:{PROXY_PORT}{PROXY_PATH}", XUI_USERNAME, XUI_PASSWORD
     )
 
-
-def create_inbound_routes(inbounds):
     for inbound in inbounds:
         app.add_api_route(
             path=f"{inbound['path']}/{{tail:path}}",
             endpoint=partial(forward_to_proxy, port=inbound["port"]),
-            methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+            methods=REQUEST_METHODS,
         )
 
 
-if __name__ == "__main__":
-    inbounds = get_inbounds(
-        f"{PROXY_URL}:{PROXY_PORT}{PROXY_PATH}", XUI_USERNAME, XUI_PASSWORD
+def add_api_routes() -> None:
+    # Forward all requests to the proxy
+    if not PROXY_PATH.startswith("/"):
+        app.add_api_route(
+            path=f"{{tail:path}}",
+            endpoint=partial(forward_to_dashboard, proxy_path=""),
+            methods=REQUEST_METHODS,
+        )
+
+        return
+
+    # Create api routes to forward requests
+    app.add_api_route(
+        path=f"{PROXY_PATH}/{{tail:path}}",
+        endpoint=partial(forward_to_dashboard, proxy_path=PROXY_PATH),
+        methods=REQUEST_METHODS,
     )
-    print(f"Loaded inbounds: {inbounds}")
 
-    create_inbound_routes(inbounds)
+    create_inbound_routes()
 
-    uvicorn.run(app, host="0.0.0.0", port=80)
+
+def update_config(num: int) -> None:
+    pass
+
+
+def schedule_config_updates() -> None:
+    scheduler = AsyncIOScheduler()
+    now = datetime.datetime.now()
+
+    start_time = now.replace(minute=0, second=0, microsecond=0)
+    scheduler.add_job(
+        update_config,
+        IntervalTrigger(hours=1, start_date=start_time),
+        args=[0],
+    )
+
+    scheduler.start()
+
+
+async def start_api_server() -> None:
+    config = Config(app=app, host="0.0.0.0", port=8888, log_level="critical")
+    await Server(config).serve()
+
+
+async def main() -> None:
+    add_api_routes()
+    schedule_config_updates()
+
+    print("Starting API server")
+    await start_api_server()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
