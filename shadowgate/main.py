@@ -1,11 +1,12 @@
 import os
 import asyncio
 import datetime
+import websockets
 from xui import *
 from functools import partial
 from httpx import AsyncClient
 from uvicorn import Config, Server
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, WebSocket
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -14,6 +15,7 @@ PROXY_URL: str | None = os.environ.get("PROXY_URL")
 PROXY_PORT: str | None = os.environ.get("PROXY_PORT")
 PROXY_PATH: str | None = os.environ.get("PROXY_PATH")
 HOST_DOMAIN: str | None = os.environ.get("HOST_DOMAIN")
+PROXY_DOMAIN: str | None = os.environ.get("PROXY_DOMAIN")
 XUI_USERNAME: str | None = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD: str | None = os.environ.get("XUI_PASSWORD")
 
@@ -22,6 +24,7 @@ if (
     or PROXY_PORT is None
     or PROXY_PATH is None
     or HOST_DOMAIN is None
+    or PROXY_DOMAIN is None
     or XUI_USERNAME is None
     or XUI_PASSWORD is None
 ):
@@ -31,14 +34,13 @@ if (
 
 REQUEST_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
 app = FastAPI()
-client = AsyncClient(timeout=300.0)
+client = AsyncClient()
 
 
 async def forward_to_dashboard(
     request: Request, tail: str, proxy_path: str
 ) -> Response:
-    target_url = f"{PROXY_URL}:{PROXY_PORT}{proxy_path}{tail}"
-    print(f"Request to {target_url} forwarded to dashboard")
+    target_url = f"http://{PROXY_URL}:{PROXY_PORT}{proxy_path}/{tail}"
 
     forwarded_request = client.build_request(
         method=request.method,
@@ -62,22 +64,53 @@ async def forward_to_dashboard(
     )
 
 
-async def forward_to_proxy(request: Request, tail: str, port: str) -> Response:
-    target_url = f"{PROXY_URL}:{port}/{tail}"
-    print(f"Request to {target_url} forwarded to proxy")
-    return Response(content="Hello World", status_code=200)
+async def forward_to_proxy(websocket: WebSocket, port: str, path: str):
+    target_url = f"ws://{PROXY_URL}:{port}{path}"
+
+    await websocket.accept()
+
+    try:
+        async with websockets.connect(target_url) as backend_ws:
+
+            async def client_to_backend():
+                try:
+                    while True:
+                        message = await websocket.receive()
+
+                        if "text" in message:
+                            await backend_ws.send(message["text"])
+                        elif "bytes" in message:
+                            await backend_ws.send(message["bytes"])
+                        else:
+                            await backend_ws.close()
+                            break
+
+                except Exception:
+                    await backend_ws.close()
+
+            async def backend_to_client():
+                try:
+                    async for message in backend_ws:
+                        await websocket.send_text(message)
+
+                except Exception:
+                    await websocket.close()
+
+            await asyncio.gather(client_to_backend(), backend_to_client())
+
+    except Exception:
+        await websocket.close(code=1001)
 
 
 def create_inbound_routes() -> None:
     inbounds = get_inbounds(
-        f"{PROXY_URL}:{PROXY_PORT}{PROXY_PATH}", XUI_USERNAME, XUI_PASSWORD
+        f"http://{PROXY_URL}:{PROXY_PORT}{PROXY_PATH}", XUI_USERNAME, XUI_PASSWORD
     )
 
     for inbound in inbounds:
-        app.add_api_route(
-            path=f"{inbound['path']}/{{tail:path}}",
-            endpoint=partial(forward_to_proxy, port=inbound["port"]),
-            methods=REQUEST_METHODS,
+        app.router.add_websocket_route(
+            f"{inbound['path']}",
+            partial(forward_to_proxy, port=inbound["port"], path=inbound["path"]),
         )
 
 
@@ -85,7 +118,7 @@ def add_api_routes() -> None:
     # Forward all requests to the proxy
     if not PROXY_PATH.startswith("/"):
         app.add_api_route(
-            path=f"{{tail:path}}",
+            path=f"/{{tail:path}}",
             endpoint=partial(forward_to_dashboard, proxy_path=""),
             methods=REQUEST_METHODS,
         )
