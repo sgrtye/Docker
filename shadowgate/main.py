@@ -72,21 +72,22 @@ async def forward_to_proxy(websocket: WebSocket, port: str, path: str):
     try:
         async with websockets.connect(target_url) as backend_ws:
 
+            async def receive_messages(websocket: WebSocket):
+                while True:
+                    yield await websocket.receive()
+
             async def client_to_backend():
                 try:
-                    while True:
-                        message = await websocket.receive()
-
+                    async for message in receive_messages(websocket):
                         if "text" in message:
                             await backend_ws.send(message["text"])
                         elif "bytes" in message:
                             await backend_ws.send(message["bytes"])
                         else:
-                            await backend_ws.close()
-                            break
+                            raise Exception("Unknown message")
 
                 except Exception:
-                    await backend_ws.close()
+                    raise
 
             async def backend_to_client():
                 try:
@@ -94,7 +95,7 @@ async def forward_to_proxy(websocket: WebSocket, port: str, path: str):
                         await websocket.send_text(message)
 
                 except Exception:
-                    await websocket.close()
+                    raise
 
             await asyncio.gather(client_to_backend(), backend_to_client())
 
@@ -123,16 +124,15 @@ def add_api_routes() -> None:
             methods=REQUEST_METHODS,
         )
 
-        return
+    # Create api routes dynamically for all paths
+    else:
+        app.add_api_route(
+            path=f"{PROXY_PATH}/{{tail:path}}",
+            endpoint=partial(forward_to_dashboard, proxy_path=PROXY_PATH),
+            methods=REQUEST_METHODS,
+        )
 
-    # Create api routes to forward requests
-    app.add_api_route(
-        path=f"{PROXY_PATH}/{{tail:path}}",
-        endpoint=partial(forward_to_dashboard, proxy_path=PROXY_PATH),
-        methods=REQUEST_METHODS,
-    )
-
-    create_inbound_routes()
+        create_inbound_routes()
 
 
 def update_config(num: int) -> None:
@@ -154,7 +154,7 @@ def schedule_config_updates() -> None:
 
 
 async def start_api_server() -> None:
-    config = Config(app=app, host="0.0.0.0", port=8888, log_level="critical")
+    config = Config(app=app, host="0.0.0.0", port=80, log_level="critical")
     await Server(config).serve()
 
 
