@@ -13,20 +13,18 @@ async def get_config_file(request: Request, tail: str) -> Response:
             if path_parts[0] != client["prefix"]:
                 continue
 
-            # Other subscription usage
+            # Private subscription usages
             if client["name"] == "SGRTYE":
-                try:
+                if os.path.exists(f"/conf/{path_parts[-1]}"):
                     return FileResponse(f"/conf/{path_parts[-1]}")
-                except Exception:
-                    pass
 
             if path_parts[2] not in ["yidong", "liantong", "dianxin"]:
                 continue
 
-            # Default usage, currently using mitce subscription
-            if path_parts[3] == "config.yaml":
+            if path_parts[3] != "config.yaml":
                 continue
 
+            # Default usage, currently using the mitce subscription
             user_agent = request.headers.get("user-agent", "Unknown")
             if "shadowrocket" in user_agent:
                 return FileResponse(

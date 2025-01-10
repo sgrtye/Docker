@@ -58,7 +58,6 @@ async def get_inbounds() -> list[dict[str, str]]:
             }
             results.append(info)
 
-        print(f"Loaded inbounds: {results}")
         return results
 
     except Exception:
