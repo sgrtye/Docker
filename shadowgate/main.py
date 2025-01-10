@@ -6,28 +6,20 @@ from xui import *
 from functools import partial
 from httpx import AsyncClient
 from uvicorn import Config, Server
-from fastapi import FastAPI, Request, Response, WebSocket
+from fastapi.staticfiles import StaticFiles
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from fastapi import FastAPI, Request, Response, Depends, WebSocket, HTTPException
 
 
-PROXY_URL: str | None = os.environ.get("PROXY_URL")
+PROXY_HOST: str | None = os.environ.get("PROXY_HOST")
 PROXY_PORT: str | None = os.environ.get("PROXY_PORT")
 PROXY_PATH: str | None = os.environ.get("PROXY_PATH")
 HOST_DOMAIN: str | None = os.environ.get("HOST_DOMAIN")
-PROXY_DOMAIN: str | None = os.environ.get("PROXY_DOMAIN")
 XUI_USERNAME: str | None = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD: str | None = os.environ.get("XUI_PASSWORD")
 
-if (
-    PROXY_URL is None
-    or PROXY_PORT is None
-    or PROXY_PATH is None
-    or HOST_DOMAIN is None
-    or PROXY_DOMAIN is None
-    or XUI_USERNAME is None
-    or XUI_PASSWORD is None
-):
+if HOST_DOMAIN is None:
     print("Environment variables not fulfilled")
     raise SystemExit(0)
 
@@ -37,10 +29,15 @@ app = FastAPI()
 client = AsyncClient()
 
 
+def check_for_host_domain(request: Request) -> None:
+    if request.headers.get("host") != HOST_DOMAIN:
+        raise HTTPException(status_code=404, detail="Not Found")
+
+
 async def forward_to_dashboard(
     request: Request, tail: str, proxy_path: str
 ) -> Response:
-    target_url = f"http://{PROXY_URL}:{PROXY_PORT}{proxy_path}/{tail}"
+    target_url = f"http://{PROXY_HOST}:{PROXY_PORT}{proxy_path}/{tail}"
 
     forwarded_request = client.build_request(
         method=request.method,
@@ -65,7 +62,7 @@ async def forward_to_dashboard(
 
 
 async def forward_to_proxy(websocket: WebSocket, port: str, path: str):
-    target_url = f"ws://{PROXY_URL}:{port}{path}"
+    target_url = f"ws://{PROXY_HOST}:{port}{path}"
 
     await websocket.accept()
 
@@ -103,10 +100,8 @@ async def forward_to_proxy(websocket: WebSocket, port: str, path: str):
         await websocket.close(code=1001)
 
 
-def create_inbound_routes() -> None:
-    inbounds = get_inbounds(
-        f"http://{PROXY_URL}:{PROXY_PORT}{PROXY_PATH}", XUI_USERNAME, XUI_PASSWORD
-    )
+async def create_inbound_routes() -> None:
+    inbounds = await get_inbounds()
 
     for inbound in inbounds:
         app.router.add_websocket_route(
@@ -115,7 +110,7 @@ def create_inbound_routes() -> None:
         )
 
 
-def add_api_routes() -> None:
+async def add_api_routes() -> None:
     # Forward all requests to the proxy
     if not PROXY_PATH.startswith("/"):
         app.add_api_route(
@@ -129,10 +124,16 @@ def add_api_routes() -> None:
         app.add_api_route(
             path=f"{PROXY_PATH}/{{tail:path}}",
             endpoint=partial(forward_to_dashboard, proxy_path=PROXY_PATH),
+            dependencies=[Depends(check_for_host_domain)],
             methods=REQUEST_METHODS,
         )
 
-        create_inbound_routes()
+        await create_inbound_routes()
+
+        app.mount(
+            "/",
+            StaticFiles(directory="/website", html=True),
+        )
 
 
 def update_config(num: int) -> None:
@@ -159,7 +160,7 @@ async def start_api_server() -> None:
 
 
 async def main() -> None:
-    add_api_routes()
+    await add_api_routes()
     schedule_config_updates()
 
     print("Starting API server")
