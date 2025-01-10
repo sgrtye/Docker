@@ -3,6 +3,7 @@ import asyncio
 import datetime
 import websockets
 from xui import *
+from mitce import *
 from subscription import *
 from functools import partial
 from httpx import AsyncClient
@@ -150,19 +151,12 @@ async def add_api_routes() -> None:
         )
 
 
-def update_config(num: int) -> None:
-    pass
-
-
 def schedule_config_updates() -> None:
     scheduler = AsyncIOScheduler()
-    now = datetime.datetime.now()
 
-    start_time = now.replace(minute=0, second=0, microsecond=0)
     scheduler.add_job(
-        update_config,
-        IntervalTrigger(hours=1, start_date=start_time),
-        args=[0],
+        update_mitce_config,
+        IntervalTrigger(hours=8, start_date=datetime.datetime.now()),
     )
 
     scheduler.start()
