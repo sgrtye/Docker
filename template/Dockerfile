@@ -1,5 +1,6 @@
 FROM python:3.12-alpine
 
+EXPOSE 80
 ENV TZ=Europe/London
 
 COPY . /app
