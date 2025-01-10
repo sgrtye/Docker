@@ -71,7 +71,7 @@ async def get_clients() -> list[dict[str, str]]:
         response = await get_inbounds_json()
 
         results = []
-        for inbound in response.json()["obj"]:
+        for inbound in response["obj"]:
             for client in json.loads(inbound["settings"])["clients"]:
                 info = {
                     "uuid": client["id"],

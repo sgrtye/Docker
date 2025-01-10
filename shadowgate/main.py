@@ -3,6 +3,7 @@ import asyncio
 import datetime
 import websockets
 from xui import *
+from subscription import *
 from functools import partial
 from httpx import AsyncClient
 from uvicorn import Config, Server
@@ -22,7 +23,6 @@ XUI_PASSWORD: str | None = os.environ.get("XUI_PASSWORD")
 if HOST_DOMAIN is None:
     print("Environment variables not fulfilled")
     raise SystemExit(0)
-
 
 REQUEST_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
 app = FastAPI()
@@ -100,6 +100,10 @@ async def forward_to_proxy(websocket: WebSocket, port: str, path: str):
         await websocket.close(code=1001)
 
 
+async def get_config(request: Request, tail: str) -> Response:
+    return await get_config_file(request, tail)
+
+
 async def create_inbound_routes() -> None:
     inbounds = await get_inbounds()
 
@@ -121,6 +125,7 @@ async def add_api_routes() -> None:
 
     # Create api routes dynamically for all paths
     else:
+        # Dashboard
         app.add_api_route(
             path=f"{PROXY_PATH}/{{tail:path}}",
             endpoint=partial(forward_to_dashboard, proxy_path=PROXY_PATH),
@@ -128,8 +133,17 @@ async def add_api_routes() -> None:
             methods=REQUEST_METHODS,
         )
 
+        #  Config files
+        app.add_api_route(
+            path=f"/conf/{{tail:path}}",
+            endpoint=get_config,
+            dependencies=[Depends(check_for_host_domain)],
+        )
+
+        # Proxy connections
         await create_inbound_routes()
 
+        # Static HTML page
         app.mount(
             "/",
             StaticFiles(directory="/website", html=True),
