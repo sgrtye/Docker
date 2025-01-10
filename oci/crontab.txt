@@ -1,1 +1,1 @@
-3,18,33,48 * * * * /usr/local/bin/php /app/index.php /env/.env
+3-60/15 * * * * /usr/local/bin/php /app/index.php /env/.env
