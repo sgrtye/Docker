@@ -4,13 +4,21 @@ import json
 import signal
 import random
 import telebot
-import datetime
+
 import threading
 import http.server
 import socketserver
+
 from lxml import etree
 from curl_cffi import requests
 
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 BOOK_URL: str | None = os.environ.get("BOOK_URL")
 PROXY_URL: str | None = os.environ.get("PROXY_URL")
@@ -23,8 +31,8 @@ if (
     or BOOK_URL is None
     or PROXY_URL is None
 ):
-    print("Environment variables not fulfilled")
-    raise SystemExit
+    logging.critical("Environment variables not fulfilled")
+    raise SystemExit(0)
 
 IP_PATH: str = "/config/ip.txt"
 BOOK_PATH: str = "/config/book.txt"
@@ -67,9 +75,8 @@ def load_proxies() -> list[tuple[str, str, str, str]]:
         return proxies
 
     except Exception as e:
-        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e))
+        logging.error(f"When loading proxies: {repr(e)}")
         bot.send_message(TELEBOT_USER_ID, repr(e))
-        raise SystemExit
 
 
 def load_books() -> list[tuple[str, str]]:
@@ -113,7 +120,7 @@ def get_url_html(url, proxy=None) -> str | None:
 
     except Exception as e:
         if proxy is None:
-            print("Error occurred when using native ip")
+            logging.error("Error occurred when using native ip")
             return None
         raise e
 
@@ -129,7 +136,7 @@ def extract_book_title(html) -> str | None:
         return span_element.text
 
     except Exception as e:
-        print("The following error occurred when extracting book title")
+        logging.error("The following error occurred when extracting book title")
         raise e
 
 
@@ -140,10 +147,7 @@ def save_titles() -> None:
 
 def handle_sigterm(signum, frame) -> None:
     save_titles()
-    print(
-        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "Title saved before exiting",
-    )
+    logging.info("Title saved before exiting")
     raise SystemExit(0)
 
 
@@ -190,6 +194,8 @@ if __name__ == "__main__":
     bot = telebot.TeleBot(TELEBOT_TOKEN)
 
     proxies = load_proxies()
+    if not proxies:
+        raise SystemExit(0)
 
     books = load_books()
     i: int = 0
@@ -204,9 +210,7 @@ if __name__ == "__main__":
 
     signal.signal(signal.SIGTERM, handle_sigterm)
 
-    print(
-        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Novel monitor started"
-    )
+    logging.info("Novel monitor started")
 
     try:
         while True:
@@ -245,13 +249,10 @@ if __name__ == "__main__":
                     break
 
                 except Exception as e:
-                    print(
-                        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(e)
-                    )
-                    print(
+                    logging.error(
                         f"Error occurred when checking {books[i][1]} with proxy {ip}:{port}"
                     )
-                    print(
+                    logging.error(
                         f"Error occurred during iteration {index} on line {e.__traceback__.tb_lineno}"
                     )
                     time.sleep(sleep_interval)
@@ -281,7 +282,4 @@ if __name__ == "__main__":
             TELEBOT_USER_ID,
             f"The exception occurred when processing book {books[i][1]} with error message: {repr(e)}",
         )
-        print(
-            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Error occurred, program terminated",
-        )
+        logging.critical("Error occurred, program terminated")
