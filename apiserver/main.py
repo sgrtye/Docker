@@ -3,8 +3,6 @@ import time
 import json
 import math
 import random
-import datetime
-
 import signal
 import platform
 
@@ -17,7 +15,6 @@ from fastapi import FastAPI
 from uvicorn import Config, Server
 from fastapi.responses import JSONResponse
 
-from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import logging
@@ -84,7 +81,7 @@ NO_CACHE_HEADER = {
 
 @app.get("/health")
 async def health_endpoint():
-    if time.time() - last_updated_time <= (3600 // len(MAPPING)) + 60:
+    if time.time() - last_updated_time <= (60 // len(MAPPING) + 1) * 60:
         return JSONResponse(content={"message": "OK"}, headers=NO_CACHE_HEADER)
     else:
         return JSONResponse(
@@ -273,20 +270,21 @@ async def start_api_server() -> None:
 
 def schedule_yfinance_updates() -> None:
     scheduler = AsyncIOScheduler()
-    interval = 3600 // len(MAPPING)
-    now = datetime.datetime.now()
+    interval = 60 // len(MAPPING)
 
-    scheduler.add_job(save_status, IntervalTrigger(days=1))
+    scheduler.add_job(
+        save_status,
+        "cron",
+        hour=10,
+        minute=24,
+    )
 
     for i, symbol in enumerate(MAPPING.keys()):
-        start_time = now.replace(
-            minute=0, second=0, microsecond=0
-        ) + datetime.timedelta(seconds=interval * i)
-
         scheduler.add_job(
             update_status,
-            IntervalTrigger(hours=1, start_date=start_time),
-            args=[symbol],
+            "cron",
+            minute=i * interval,
+            args=(symbol),
         )
 
     scheduler.start()
