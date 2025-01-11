@@ -1,10 +1,15 @@
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+logger = logging.getLogger("my_app")
+logger.setLevel(logging.INFO)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    fmt="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+logger.propagate = False
 
 import os
 import asyncio
@@ -30,7 +35,7 @@ XUI_USERNAME: str | None = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD: str | None = os.environ.get("XUI_PASSWORD")
 
 if HOST_DOMAIN is None:
-    logging.critical("HOST_DOMAIN not provided")
+    logger.critical("HOST_DOMAIN not provided")
     raise SystemExit(0)
 
 REQUEST_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
@@ -181,7 +186,7 @@ async def main() -> None:
     await add_api_routes()
     schedule_config_updates()
 
-    logging.info("Starting API server")
+    logger.info("Starting API server")
     await start_api_server()
 
 

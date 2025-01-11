@@ -5,11 +5,11 @@ import logging
 from constants import *
 
 MITCE_URL: str | None = os.environ.get("MITCE_URL")
-
+logger = logging.getLogger("my_app")
 
 async def update_mitce_config():
     if MITCE_URL is None:
-        logging.error("MITCE_URL not provided")
+        logger.error("MITCE_URL not provided")
         return
 
     try:
@@ -19,7 +19,7 @@ async def update_mitce_config():
         )
 
         if shadowrocket_response.status_code != 200:
-            logging.error("Shadowrocket config failed to update")
+            logger.error("Shadowrocket config failed to update")
             return
 
         os.makedirs(os.path.dirname(MITCE_SHADOWROCKET_PATH), exist_ok=True)
@@ -32,7 +32,7 @@ async def update_mitce_config():
         )
 
         if clash_response.status_code != 200:
-            logging.error("Clash config failed to update")
+            logger.error("Clash config failed to update")
             return
 
         os.makedirs(os.path.dirname(MITCE_CLASH_PATH), exist_ok=True)
@@ -44,7 +44,7 @@ async def update_mitce_config():
             user_info = clash_response.headers.get("subscription-userinfo", "")
             file.write(user_info)
 
-        logging.info("New mitce config files fetched")
+        logger.info("New mitce config files fetched")
 
     except Exception:
         pass

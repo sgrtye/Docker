@@ -24,11 +24,11 @@ logger.setLevel(logging.INFO)
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 formatter = logging.Formatter(
-    fmt="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    fmt="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
+logger.propagate = False
 
 XUI_URL: str | None = os.environ.get("XUI_URL")
 XUI_USERNAME: str | None = os.environ.get("XUI_USERNAME")
@@ -246,7 +246,7 @@ def get_info_by_ticker(tickers: str) -> dict[str, str]:
             info[ticker + TREND_ENDING] = format_number(trend)
 
         except Exception as e:
-            logging.error(
+            logger.error(
                 f"Error {repr(e)} occurred on line {e.__traceback__.tb_lineno}"
             )
 

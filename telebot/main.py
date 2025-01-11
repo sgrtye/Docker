@@ -6,18 +6,23 @@ import requests
 
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+logger = logging.getLogger("my_app")
+logger.setLevel(logging.INFO)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    fmt="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+logger.propagate = False
 
 NOVEL_URL: str | None = os.environ.get("NOVEL_URL")
 GLANCES_URL: str | None = os.environ.get("GLANCES_URL")
 TELEBOT_TOKEN: str | None = os.environ.get("TELEBOT_TOKEN")
 
 if NOVEL_URL is None or GLANCES_URL is None or TELEBOT_TOKEN is None:
-    logging.critical("Environment variables not fulfilled")
+    logger.critical("Environment variables not fulfilled")
     raise SystemExit(0)
 
 bot = telebot.TeleBot(TELEBOT_TOKEN)
@@ -139,7 +144,7 @@ def main() -> None:
         telebot.types.BotCommand("restore", "Restart all exited containers"),
     ]
 
-    logging.info("Telegram bot started")
+    logger.info("Telegram bot started")
     bot.set_my_commands(commands)
     bot.infinity_polling(logger_level=None)
 

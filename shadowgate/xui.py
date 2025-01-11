@@ -5,6 +5,8 @@ import httpx
 import asyncio
 import logging
 
+logger = logging.getLogger("my_app")
+
 PROXY_HOST: str | None = os.environ.get("PROXY_HOST")
 PROXY_PORT: str | None = os.environ.get("PROXY_PORT")
 PROXY_PATH: str | None = os.environ.get("PROXY_PATH")
@@ -18,7 +20,7 @@ if (
     or XUI_USERNAME is None
     or XUI_PASSWORD is None
 ):
-    logging.critical("Environment variables not fulfilled")
+    logger.critical("Environment variables not fulfilled")
     raise SystemExit(0)
 
 xui_session = httpx.AsyncClient()
@@ -64,7 +66,7 @@ async def get_inbounds() -> list[dict[str, str]]:
         return results
 
     except Exception:
-        logging.critical("Failed to parse inbounds")
+        logger.critical("Failed to parse inbounds")
         return []
 
 
@@ -87,7 +89,7 @@ async def get_clients() -> list[dict[str, str]]:
         return results
 
     except Exception:
-        logging.error("Failed to parse clients")
+        logger.error("Failed to parse clients")
         return []
 
 
