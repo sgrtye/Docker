@@ -75,7 +75,7 @@ async def forward_to_dashboard(
     )
 
 
-async def forward_to_proxy(websocket: WebSocket, port: str, path: str):
+async def forward_to_proxy(websocket: WebSocket, port: str, path: str) -> None:
     target_url = f"ws://{PROXY_HOST}:{port}{path}"
 
     await websocket.accept()
