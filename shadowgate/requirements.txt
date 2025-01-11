@@ -1,6 +1,5 @@
 httpx
 uvicorn
 fastapi
-datetime
 websockets
 apscheduler

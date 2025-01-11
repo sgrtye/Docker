@@ -2,26 +2,38 @@ import os
 import time
 import json
 import math
-import httpx
-import signal
 import random
-import pandas
-import asyncio
-import yfinance
 import datetime
+
+import signal
 import platform
+
+import pandas
+import yfinance
+
+import httpx
+import asyncio
 from fastapi import FastAPI
 from uvicorn import Config, Server
 from fastapi.responses import JSONResponse
+
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 XUI_URL: str | None = os.environ.get("XUI_URL")
 XUI_USERNAME: str | None = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD: str | None = os.environ.get("XUI_PASSWORD")
 
 if XUI_URL is None or XUI_USERNAME is None or XUI_PASSWORD is None:
-    print("Environment variables not fulfilled")
+    logging.critical("Environment variables not fulfilled")
     raise SystemExit(0)
 
 xui_status: dict[str, str] = dict()
@@ -232,8 +244,9 @@ def get_info_by_ticker(tickers: str) -> dict[str, str]:
             info[ticker + TREND_ENDING] = format_number(trend)
 
         except Exception as e:
-            print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            print(f"Error {repr(e)} occurred on line {e.__traceback__.tb_lineno}")
+            logging.error(
+                f"Error {repr(e)} occurred on line {e.__traceback__.tb_lineno}"
+            )
 
     if info:
         global last_updated_time
@@ -281,10 +294,7 @@ def schedule_yfinance_updates() -> None:
 
 def handle_sigterm(signum, frame) -> None:
     save_status()
-    print(
-        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "All status saved before exiting",
-    )
+    logging.info("All status saved before exiting")
     raise SystemExit(0)
 
 
@@ -296,13 +306,13 @@ async def main() -> None:
             asyncio.get_running_loop().add_signal_handler(
                 signal.SIGTERM, handle_sigterm
             )
-            print("Signal handler for SIGTERM is registered.")
+            logging.info("Signal handler for SIGTERM is registered.")
 
         case _:
-            print("Signal handler registration skipped.")
+            logging.info("Signal handler registration skipped.")
             pass
 
-    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "API server started")
+    logging.info("API server started")
 
     schedule_yfinance_updates()
     await start_api_server()

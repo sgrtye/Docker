@@ -3,15 +3,22 @@ import json
 import docker
 import telebot
 import requests
-import datetime
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 NOVEL_URL: str | None = os.environ.get("NOVEL_URL")
 GLANCES_URL: str | None = os.environ.get("GLANCES_URL")
 TELEBOT_TOKEN: str | None = os.environ.get("TELEBOT_TOKEN")
 
 if NOVEL_URL is None or GLANCES_URL is None or TELEBOT_TOKEN is None:
-    print("Environment variables not fulfilled")
-    raise SystemExit
+    logging.critical("Environment variables not fulfilled")
+    raise SystemExit(0)
 
 bot = telebot.TeleBot(TELEBOT_TOKEN)
 
@@ -129,7 +136,7 @@ def main() -> None:
 
     bot.set_my_commands(commands)
     bot.infinity_polling(logger_level=None)
-    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Telegram bot started")
+    logging.info("Telegram bot started")
 
 
 if __name__ == "__main__":
