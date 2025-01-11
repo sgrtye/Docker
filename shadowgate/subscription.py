@@ -1,5 +1,6 @@
 import os
 from xui import *
+from constants import *
 from fastapi.responses import FileResponse
 from fastapi import Request, Response, HTTPException
 
@@ -14,21 +15,21 @@ def get_static_config(file_name: str) -> FileResponse | None:
 def get_mitce_config(request: Request) -> FileResponse | None:
     user_agent = request.headers.get("user-agent", "Unknown")
 
-    if "shadowrocket" in user_agent and os.path.exists(f"/conf/mitce/shadowrocket"):
+    if "shadowrocket" in user_agent and os.path.exists(MITCE_SHADOWROCKET_PATH):
         return FileResponse(
-            "/conf/mitce/shadowrocket",
+            MITCE_SHADOWROCKET_PATH,
             media_type="application/octet-stream",
             filename="shadowrocket",
         )
 
-    if "clash" in user_agent and os.path.exists(f"/conf/mitce/config.yaml"):
+    if "clash" in user_agent and os.path.exists(MITCE_CLASH_PATH):
         user_info = ""
-        if os.path.exists("/conf/mitce/userinfo.txt"):
-            with open("/conf/mitce/userinfo.txt", "r") as file:
+        if os.path.exists(MITCE_CLASH_USERINFO_PATH):
+            with open(MITCE_CLASH_USERINFO_PATH, "r") as file:
                 user_info = file.read()
 
         return FileResponse(
-            "/conf/mitce/config.yaml",
+            MITCE_CLASH_PATH,
             media_type="application/x-yaml",
             filename="config.yaml",
             headers={"subscription-userinfo": user_info},
@@ -48,8 +49,7 @@ async def get_config_file(request: Request, tail: str) -> Response:
         # Provide static files only for the main user
         if (
             client["name"] == "SGRTYE"
-            and len(path_parts) == 2
-            and (response := get_static_config(path_parts[1])) is not None
+            and (response := get_static_config("/".join(path_parts[1:]))) is not None
         ):
             return response
 

@@ -1,6 +1,7 @@
 import os
 import httpx
 import datetime
+from constants import *
 
 MITCE_URL: str | None = os.environ.get("MITCE_URL")
 
@@ -23,8 +24,8 @@ async def update_mitce_config():
             )
             return
 
-        os.makedirs(os.path.dirname("/conf/mitce/shadowrocket"), exist_ok=True)
-        with open("/conf/mitce/shadowrocket", "w", encoding="utf-8") as file:
+        os.makedirs(os.path.dirname(MITCE_SHADOWROCKET_PATH), exist_ok=True)
+        with open(MITCE_SHADOWROCKET_PATH, "w", encoding="utf-8") as file:
             file.write(shadowrocket_response.text)
 
         # Get Clash config file
@@ -39,12 +40,12 @@ async def update_mitce_config():
             )
             return
 
-        os.makedirs(os.path.dirname("/conf/mitce/config.yaml"), exist_ok=True)
-        with open("/conf/mitce/config.yaml", "w", encoding="utf-8") as file:
+        os.makedirs(os.path.dirname(MITCE_CLASH_PATH), exist_ok=True)
+        with open(MITCE_CLASH_PATH, "w", encoding="utf-8") as file:
             file.write(clash_response.text)
 
-        os.makedirs(os.path.dirname("/conf/mitce/userinfo.txt"), exist_ok=True)
-        with open("/conf/mitce/userinfo.txt", "w", encoding="utf-8") as file:
+        os.makedirs(os.path.dirname(MITCE_CLASH_USERINFO_PATH), exist_ok=True)
+        with open(MITCE_CLASH_USERINFO_PATH, "w", encoding="utf-8") as file:
             user_info = clash_response.headers.get("subscription-userinfo", "")
             file.write(user_info)
 
