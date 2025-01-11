@@ -23,17 +23,17 @@ if NOVEL_URL is None or GLANCES_URL is None or TELEBOT_TOKEN is None:
 bot = telebot.TeleBot(TELEBOT_TOKEN)
 
 
-def MarkdownV2Encode(reply) -> str:
+def markdown_v2_encode(reply) -> str:
     text = "\n".join(reply)
     return f"```\n{text}```"
 
 
-def DefaultEncode(reply) -> str:
+def default_encode(reply) -> str:
     text = "\n".join(reply)
     return text
 
 
-def containerUsage() -> list[str]:
+def container_usage() -> list[str]:
     response = requests.get(GLANCES_URL)
 
     if response.status_code != 200:
@@ -47,6 +47,9 @@ def containerUsage() -> list[str]:
     reply.append(f"{'Name':<12} {'CPU':<5}  {'Memory':<5}")
 
     for container in containers:
+        if container["status"] != "running":
+            continue
+
         container_name: str = container["name"]
 
         cpu_percentage: float = container["cpu"]["total"]
@@ -69,7 +72,7 @@ def containerUsage() -> list[str]:
     return reply
 
 
-def novelUpdate() -> list[str]:
+def novel_update() -> list[str]:
     response = requests.get(NOVEL_URL)
 
     if response.status_code != 200:
@@ -111,17 +114,19 @@ def restore() -> list[str]:
 
 @bot.message_handler(commands=["info"])
 def handle_info_command(message) -> None:
-    bot.reply_to(message, MarkdownV2Encode(containerUsage()), parse_mode="MarkdownV2")
+    bot.reply_to(
+        message, markdown_v2_encode(container_usage()), parse_mode="MarkdownV2"
+    )
 
 
 @bot.message_handler(commands=["novel"])
 def handle_novel_update_command(message) -> None:
-    bot.reply_to(message, DefaultEncode(novelUpdate()), parse_mode=None)
+    bot.reply_to(message, default_encode(novel_update()), parse_mode=None)
 
 
 @bot.message_handler(commands=["restore"])
 def handle_container_restore_command(message) -> None:
-    bot.reply_to(message, MarkdownV2Encode(restore()), parse_mode="MarkdownV2")
+    bot.reply_to(message, markdown_v2_encode(restore()), parse_mode="MarkdownV2")
 
 
 def main() -> None:
@@ -134,9 +139,9 @@ def main() -> None:
         telebot.types.BotCommand("restore", "Restart all exited containers"),
     ]
 
+    logging.info("Telegram bot started")
     bot.set_my_commands(commands)
     bot.infinity_polling(logger_level=None)
-    logging.info("Telegram bot started")
 
 
 if __name__ == "__main__":
