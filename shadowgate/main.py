@@ -8,7 +8,6 @@ logging.basicConfig(
 
 import os
 import asyncio
-import datetime
 from functools import partial
 
 import websockets
@@ -17,7 +16,6 @@ from uvicorn import Config, Server
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request, Response, Depends, WebSocket, HTTPException
 
-from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from xui import *
@@ -166,7 +164,9 @@ def schedule_config_updates() -> None:
 
     scheduler.add_job(
         update_mitce_config,
-        IntervalTrigger(hours=8, start_date=datetime.datetime.now()),
+        "cron",
+        hour="0,8,16",
+        minute="24",
     )
 
     scheduler.start()
