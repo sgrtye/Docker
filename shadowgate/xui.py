@@ -2,6 +2,8 @@ import os
 import json
 import time
 import httpx
+import asyncio
+import logging
 
 PROXY_HOST: str | None = os.environ.get("PROXY_HOST")
 PROXY_PORT: str | None = os.environ.get("PROXY_PORT")
@@ -16,7 +18,7 @@ if (
     or XUI_USERNAME is None
     or XUI_PASSWORD is None
 ):
-    print("Environment variables not fulfilled")
+    logging.critical("Environment variables not fulfilled")
     raise SystemExit(0)
 
 xui_session = httpx.AsyncClient()
@@ -30,6 +32,7 @@ async def xui_login() -> None:
     global xui_rate_limit_time
     # Rate limit to every 5 seconds
     if time.time() - xui_rate_limit_time < 5:
+        await asyncio.sleep(1)
         return
 
     await xui_session.post(XUI_URL + "/login", data=CREDENTIAL)
@@ -61,7 +64,7 @@ async def get_inbounds() -> list[dict[str, str]]:
         return results
 
     except Exception:
-        print("Failed to parse inbounds")
+        logging.critical("Failed to parse inbounds")
         return []
 
 
@@ -84,6 +87,7 @@ async def get_clients() -> list[dict[str, str]]:
         return results
 
     except Exception:
+        logging.error("Failed to parse clients")
         return []
 
 

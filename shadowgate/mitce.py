@@ -1,16 +1,17 @@
 import os
 import httpx
-import datetime
+import logging
+
 from constants import *
 
 MITCE_URL: str | None = os.environ.get("MITCE_URL")
 
-if MITCE_URL is None:
-    print("MITCE_URL not provided")
-    raise SystemExit(0)
-
 
 async def update_mitce_config():
+    if MITCE_URL is None:
+        logging.error("MITCE_URL not provided")
+        return
+
     try:
         # Get Shadowrocket config string
         shadowrocket_response = await httpx.AsyncClient().get(
@@ -18,10 +19,7 @@ async def update_mitce_config():
         )
 
         if shadowrocket_response.status_code != 200:
-            print(
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "Shadowrocket config failed to update",
-            )
+            logging.error("Shadowrocket config failed to update")
             return
 
         os.makedirs(os.path.dirname(MITCE_SHADOWROCKET_PATH), exist_ok=True)
@@ -34,10 +32,7 @@ async def update_mitce_config():
         )
 
         if clash_response.status_code != 200:
-            print(
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "Clash config failed to update",
-            )
+            logging.error("Clash config failed to update")
             return
 
         os.makedirs(os.path.dirname(MITCE_CLASH_PATH), exist_ok=True)
@@ -49,10 +44,7 @@ async def update_mitce_config():
             user_info = clash_response.headers.get("subscription-userinfo", "")
             file.write(user_info)
 
-        print(
-            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "New mitce config files fetched",
-        )
+        logging.info("New mitce config files fetched")
 
     except Exception:
         pass

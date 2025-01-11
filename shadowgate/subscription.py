@@ -1,8 +1,26 @@
 import os
-from xui import *
-from constants import *
+
+import logging
+from logging.handlers import RotatingFileHandler
+
 from fastapi.responses import FileResponse
 from fastapi import Request, Response, HTTPException
+
+from xui import *
+from constants import *
+
+logger = logging.getLogger("config_access")
+logger.setLevel(logging.INFO)
+# log file max size of 5mb with 3 backups
+handler = RotatingFileHandler(
+    CONFIG_ACCESS_LOG_PATH, maxBytes=1024 * 1024 * 5, backupCount=3
+)
+formatter = logging.Formatter(
+    "%(asctime)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S"
+)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.propagate = False
 
 
 def get_static_config(file_name: str) -> FileResponse | None:
@@ -51,6 +69,7 @@ async def get_config_file(request: Request, tail: str) -> Response:
             client["name"] == "SGRTYE"
             and (response := get_static_config("/".join(path_parts[1:]))) is not None
         ):
+            logger.info(f"{client["name"]} accessed {path_parts[-1]}")
             return response
 
         # Return mitce config by default
@@ -60,6 +79,7 @@ async def get_config_file(request: Request, tail: str) -> Response:
             and path_parts[3] == "config.yaml"
             and (response := get_mitce_config(request)) is not None
         ):
+            logger.info(f"{client["name"]} accessed {path_parts[-1]}")
             return response
 
     raise HTTPException(status_code=404, detail="Not Found")

@@ -1,18 +1,28 @@
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
 import os
 import asyncio
 import datetime
-import websockets
-from xui import *
-from mitce import *
-from subscription import *
 from functools import partial
+
+import websockets
 from httpx import AsyncClient
 from uvicorn import Config, Server
 from fastapi.staticfiles import StaticFiles
-from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Request, Response, Depends, WebSocket, HTTPException
 
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+from xui import *
+from mitce import *
+from subscription import *
 
 PROXY_HOST: str | None = os.environ.get("PROXY_HOST")
 PROXY_PORT: str | None = os.environ.get("PROXY_PORT")
@@ -22,7 +32,7 @@ XUI_USERNAME: str | None = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD: str | None = os.environ.get("XUI_PASSWORD")
 
 if HOST_DOMAIN is None:
-    print("Environment variables not fulfilled")
+    logging.critical("Environment variables not fulfilled")
     raise SystemExit(0)
 
 REQUEST_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
@@ -171,7 +181,7 @@ async def main() -> None:
     await add_api_routes()
     schedule_config_updates()
 
-    print("Starting API server")
+    logging.info("Starting API server")
     await start_api_server()
 
 
