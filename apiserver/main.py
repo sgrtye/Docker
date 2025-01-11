@@ -284,7 +284,7 @@ def schedule_yfinance_updates() -> None:
             update_status,
             "cron",
             minute=i * interval,
-            args=(symbol),
+            kwargs={"symbols": symbol},
         )
 
     scheduler.start()
