@@ -19,18 +19,23 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+logger = logging.getLogger("my_app")
+logger.setLevel(logging.INFO)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    fmt="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
 )
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 XUI_URL: str | None = os.environ.get("XUI_URL")
 XUI_USERNAME: str | None = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD: str | None = os.environ.get("XUI_PASSWORD")
 
 if XUI_URL is None or XUI_USERNAME is None or XUI_PASSWORD is None:
-    logging.critical("Environment variables not fulfilled")
+    logger.critical("Environment variables not fulfilled")
     raise SystemExit(0)
 
 xui_status: dict[str, str] = dict()
@@ -292,7 +297,7 @@ def schedule_yfinance_updates() -> None:
 
 def handle_sigterm(signum, frame) -> None:
     save_status()
-    logging.info("All status saved before exiting")
+    logger.info("All status saved before exiting")
     raise SystemExit(0)
 
 
@@ -304,13 +309,13 @@ async def main() -> None:
             asyncio.get_running_loop().add_signal_handler(
                 signal.SIGTERM, handle_sigterm
             )
-            logging.info("Signal handler for SIGTERM is registered.")
+            logger.info("Signal handler for SIGTERM is registered.")
 
         case _:
-            logging.info("Signal handler registration skipped.")
+            logger.info("Signal handler registration skipped.")
             pass
 
-    logging.info("API server started")
+    logger.info("API server started")
 
     schedule_yfinance_updates()
     await start_api_server()
