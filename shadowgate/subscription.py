@@ -1,7 +1,7 @@
 import os
 
 import logging
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 
 from fastapi.responses import FileResponse
 from fastapi import Request, Response, HTTPException
@@ -11,13 +11,8 @@ from constants import *
 
 logger = logging.getLogger("config_access")
 logger.setLevel(logging.INFO)
-# log file max size of 5mb with 3 backups
-handler = RotatingFileHandler(
-    CONFIG_ACCESS_LOG_PATH, maxBytes=1024 * 1024 * 5, backupCount=3
-)
-formatter = logging.Formatter(
-    "%(asctime)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S"
-)
+handler = TimedRotatingFileHandler(CONFIG_ACCESS_LOG_PATH, when="W0", backupCount=4)
+formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.propagate = False

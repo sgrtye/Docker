@@ -32,7 +32,7 @@ XUI_USERNAME: str | None = os.environ.get("XUI_USERNAME")
 XUI_PASSWORD: str | None = os.environ.get("XUI_PASSWORD")
 
 if HOST_DOMAIN is None:
-    logging.critical("Environment variables not fulfilled")
+    logging.critical("HOST_DOMAIN not provided")
     raise SystemExit(0)
 
 REQUEST_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
