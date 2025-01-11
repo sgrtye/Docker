@@ -81,4 +81,4 @@ async def get_config_file(request: Request, tail: str) -> Response:
     raise HTTPException(status_code=404, detail="Not Found")
 
 
-__ALL__ = ["get_config_file"]
+__all__ = ["get_config_file"]

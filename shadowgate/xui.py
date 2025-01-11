@@ -93,4 +93,4 @@ async def get_clients() -> list[dict[str, str]]:
         return []
 
 
-__ALL__ = ["get_inbounds", "get_clients"]
+__all__ = ["get_inbounds", "get_clients"]

@@ -50,4 +50,4 @@ async def update_mitce_config():
         pass
 
 
-__ALL__ = ["update_mitce_config"]
+__all__ = ["update_mitce_config"]
