@@ -34,6 +34,12 @@ jobs:
           declare -A platform_tags
           platform_tags=(["linux/arm64"]="arm64" ["linux/amd64"]="amd64")
 
+          table_rows=()
+          table_header="| Image Name       | 🖥️ amd64 | 🐧 arm64 |"
+          table_divider="|------------------|----------|----------|"
+          table_rows+=("$table_header")
+          table_rows+=("$table_divider")
+
           while IFS= read -r line || [ -n "$line" ]; do
             set -- $line
             origin=$1
@@ -41,6 +47,9 @@ jobs:
             image_name=$3
             target=${{ secrets.TENCENT_REGISTRY_ADDRESS }}/${{ secrets.TENCENT_REGISTRY_NAME_SPACE }}/$3
             target_tag=$4
+
+            amd64_result="❌"
+            arm64_result="❌"
 
             supported_tags=()
 
@@ -60,6 +69,13 @@ jobs:
                 docker push $target:$platform_tag
                 docker image rmi $origin:$origin_tag
                 docker image rmi $target:$platform_tag
+
+                if [ "$platform_tag" = "amd64" ]; then
+                  amd64_result="✅"
+                elif [ "$platform_tag" = "arm64" ]; then
+                  arm64_result="✅"
+                fi
+
                 continue
               fi
 
@@ -76,6 +92,13 @@ jobs:
 
               docker image rmi $origin:$origin_tag
               docker image rmi $target:$platform_tag
+
+              if [ "$platform_tag" = "amd64" ]; then
+                amd64_result="✅"
+              elif [ "$platform_tag" = "arm64" ]; then
+                arm64_result="✅"
+              fi
+
             done
 
             manifest_command="docker manifest create $target:$target_tag"
@@ -85,4 +108,12 @@ jobs:
             eval $manifest_command
             docker manifest push $target:$target_tag
 
+            table_rows+=("| $(printf "%-16s" "$image_name") | $amd64_result        | $arm64_result        |")
           done < images.txt
+
+          {
+            echo "### Docker image mirroring results"
+            for row in "${table_rows[@]}"; do
+              echo "$row"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
