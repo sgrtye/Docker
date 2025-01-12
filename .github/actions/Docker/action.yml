@@ -21,7 +21,7 @@ inputs:
     required: true
   DOCKER_BUILD_TAG: 
     description: "DOCKER BUILD TAG"
-    default: 'latest'
+    required: true
   DOCKER_BUILD_PLATFORMS: 
     description: "DOCKER BUILD PLATFORMS"
     default: 'linux/amd64, linux/arm64'

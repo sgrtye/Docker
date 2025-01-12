@@ -25,3 +25,4 @@ jobs:
           REGISTRY_NAME_SPACE: ${{ secrets.DOCKER_HUB_NAME_SPACE }}
           DOCKER_BUILD_NAME: 'oci'
           DOCKER_BUILD_PATH: './oci'
+          DOCKER_BUILD_TAG: ${{ github.ref_name == 'main' && 'latest' || 'dev' }}
