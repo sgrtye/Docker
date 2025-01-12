@@ -288,7 +288,7 @@ def save_titles() -> None:
         json.dump(titles, file)
 
 
-def handle_sigterm(signum, frame) -> None:
+def handle_termination_signal() -> None:
     save_titles()
     logger.info("Title saved before exiting")
     raise SystemExit(0)
@@ -337,7 +337,7 @@ async def main() -> None:
     match platform.system():
         case "Linux":
             asyncio.get_running_loop().add_signal_handler(
-                signal.SIGTERM, handle_sigterm
+                signal.SIGTERM, handle_termination_signal
             )
             logger.info("Signal handler for SIGTERM is registered.")
 

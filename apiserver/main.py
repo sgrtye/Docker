@@ -295,7 +295,7 @@ def schedule_yfinance_updates() -> None:
     scheduler.start()
 
 
-def handle_sigterm(signum, frame) -> None:
+def handle_termination_signal() -> None:
     save_status()
     logger.info("All status saved before exiting")
     raise SystemExit(0)
@@ -307,7 +307,7 @@ async def main() -> None:
     match platform.system():
         case "Linux":
             asyncio.get_running_loop().add_signal_handler(
-                signal.SIGTERM, handle_sigterm
+                signal.SIGTERM, handle_termination_signal
             )
             logger.info("Signal handler for SIGTERM is registered.")
 
