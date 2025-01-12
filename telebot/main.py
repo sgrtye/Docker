@@ -173,7 +173,7 @@ async def main() -> None:
 
     logger.info("Telegram bot started")
     await bot.set_my_commands(commands)
-    await bot.infinity_polling()
+    await bot.infinity_polling(logger_level=logging.CRITICAL)
 
 
 if __name__ == "__main__":
