@@ -1,3 +1,4 @@
+httpx
 docker
 requests
-pyTelegramBotAPI
+python-telegram-bot

@@ -1,8 +1,11 @@
 import os
 import json
 import docker
-import telebot
-import requests
+
+import httpx
+import asyncio
+from telegram import Update, BotCommand
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 import logging
 
@@ -25,8 +28,6 @@ if NOVEL_URL is None or GLANCES_URL is None or TELEBOT_TOKEN is None:
     logger.critical("Environment variables not fulfilled")
     raise SystemExit(0)
 
-bot = telebot.TeleBot(TELEBOT_TOKEN)
-
 
 def markdown_v2_encode(reply) -> str:
     text = "\n".join(reply)
@@ -38,8 +39,9 @@ def default_encode(reply) -> str:
     return text
 
 
-def container_usage() -> list[str]:
-    response = requests.get(GLANCES_URL)
+async def container_usage() -> list[str]:
+    async with httpx.AsyncClient() as client:
+        response = client.get(GLANCES_URL)
 
     if response.status_code != 200:
         return ["Container usage is not currently available"]
@@ -77,8 +79,9 @@ def container_usage() -> list[str]:
     return reply
 
 
-def novel_update() -> list[str]:
-    response = requests.get(NOVEL_URL)
+async def novel_update() -> list[str]:
+    async with httpx.AsyncClient() as client:
+        response = client.get(NOVEL_URL)
 
     if response.status_code != 200:
         return ["Novel update is not currently available"]
@@ -117,37 +120,50 @@ def restore() -> list[str]:
     return reply
 
 
-@bot.message_handler(commands=["info"])
-def handle_info_command(message) -> None:
-    bot.reply_to(
-        message, markdown_v2_encode(container_usage()), parse_mode="MarkdownV2"
+async def handle_info_command(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    await update.message.reply_text(
+        markdown_v2_encode(await container_usage()), parse_mode="MarkdownV2"
     )
 
 
-@bot.message_handler(commands=["novel"])
-def handle_novel_update_command(message) -> None:
-    bot.reply_to(message, default_encode(novel_update()), parse_mode=None)
+async def handle_novel_update_command(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    await update.message.reply_text(await novel_update())
 
 
-@bot.message_handler(commands=["restore"])
-def handle_container_restore_command(message) -> None:
-    bot.reply_to(message, markdown_v2_encode(restore()), parse_mode="MarkdownV2")
+async def handle_container_restore_command(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    await update.message.reply_text(
+        markdown_v2_encode(restore()), parse_mode="MarkdownV2"
+    )
 
 
-def main() -> None:
+async def main() -> None:
     # Booting up all containers that were not turned off manually
     restore()
 
-    commands: list[telebot.types.BotCommand] = [
-        telebot.types.BotCommand("info", "Get server usage status"),
-        telebot.types.BotCommand("novel", "Get novel latest chapters"),
-        telebot.types.BotCommand("restore", "Restart all exited containers"),
-    ]
+    application = Application.builder().token(TELEBOT_TOKEN).build()
+
+    application.add_handler(CommandHandler("info", handle_info_command))
+    application.add_handler(CommandHandler("novel", handle_novel_update_command))
+    application.add_handler(CommandHandler("restore", handle_container_restore_command))
+
+    await application.bot.set_my_commands(
+        [
+            BotCommand("info", "Get server usage status"),
+            BotCommand("novel", "Get novel latest chapters"),
+            BotCommand("restore", "Restart all exited containers"),
+        ]
+    )
 
     logger.info("Telegram bot started")
-    bot.set_my_commands(commands)
-    bot.infinity_polling(logger_level=None)
+    await application.start_polling()
+    await application.wait_closed()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
