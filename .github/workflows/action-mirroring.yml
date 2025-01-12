@@ -35,8 +35,14 @@ jobs:
           platform_tags=(["linux/arm64"]="arm64" ["linux/amd64"]="amd64")
 
           table_rows=()
-          table_header="| Image Name       | 🖥️ amd64 | 🐧 arm64 |"
-          table_divider="|------------------|----------|----------|"
+          table_header="| **🟦 Image Name**  "
+          table_divider="|------------------"
+          for platform in "${platform_tags[@]}"; do
+            table_header+="| **🟦 $platform**  "
+            table_divider+="|----------------"
+          done
+          table_header+="|"
+          table_divider+="|"
           table_rows+=("$table_header")
           table_rows+=("$table_divider")
 
@@ -48,8 +54,10 @@ jobs:
             target=${{ secrets.TENCENT_REGISTRY_ADDRESS }}/${{ secrets.TENCENT_REGISTRY_NAME_SPACE }}/$3
             target_tag=$4
 
-            amd64_result="❌"
-            arm64_result="❌"
+            declare -A platform_results
+            for platform in "${platform_tags[@]}"; do
+              platform_results["$platform"]="❌"
+            done
 
             supported_tags=()
 
@@ -70,11 +78,8 @@ jobs:
                 docker image rmi $origin:$origin_tag
                 docker image rmi $target:$platform_tag
 
-                if [ "$platform_tag" = "amd64" ]; then
-                  amd64_result="✅"
-                elif [ "$platform_tag" = "arm64" ]; then
-                  arm64_result="✅"
-                fi
+                # New image
+                platform_results["$platform_tag"]="✨"
 
                 continue
               fi
@@ -84,23 +89,23 @@ jobs:
 
               if [ "$origin_digest" = "$target_digest" ]; then
                 echo "--$image_name-- Images are the same. Skipping push to target registry."
+
+                # Existing image
+                platform_results["$platform_tag"]="✅"
               else
                 echo "--$image_name-- Images are different. Proceeding with push to target registry."
                 docker tag $origin:$origin_tag $target:$platform_tag
                 docker push $target:$platform_tag
+
+                # Updated image
+                platform_results["$platform_tag"]="🔄"
               fi
 
               docker image rmi $origin:$origin_tag
               docker image rmi $target:$platform_tag
-
-              if [ "$platform_tag" = "amd64" ]; then
-                amd64_result="✅"
-              elif [ "$platform_tag" = "arm64" ]; then
-                arm64_result="✅"
-              fi
-
             done
 
+            # Push manifest where all platforms are combined into one image
             manifest_command="docker manifest create $target:$target_tag"
             for supported_tag in "${supported_tags[@]}"; do
               manifest_command+=" --amend $target:$supported_tag"
@@ -108,9 +113,16 @@ jobs:
             eval $manifest_command
             docker manifest push $target:$target_tag
 
-            table_rows+=("| $(printf "%-16s" "$image_name") | $amd64_result        | $arm64_result        |")
+            # Add result to table
+            row="| $(printf "%-16s" "$image_name") "
+            for platform in "${platform_tags[@]}"; do
+              row+="| ${platform_results[$platform]}          "
+            done
+            row+="|"
+            table_rows+=("$row")
           done < images.txt
 
+          # Echo table to the action summary
           {
             echo "### Docker image mirroring results"
             for row in "${table_rows[@]}"; do
