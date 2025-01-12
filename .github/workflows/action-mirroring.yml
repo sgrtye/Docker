@@ -1,0 +1,88 @@
+name: Docker image mirroring
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 10 * * 5'
+  push:
+    paths:
+      - 'images.txt'
+
+jobs:
+  Mirroring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub Registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Login to Tencent Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.TENCENT_REGISTRY_ADDRESS }}
+          username: ${{ secrets.TENCENT_REGISTRY_USER }}
+          password: ${{ secrets.TENCENT_REGISTRY_PASSWORD }}
+
+      - name: Pull & Push images between registries
+        run: |
+          declare -A platform_tags
+          platform_tags=(["linux/arm64"]="arm64" ["linux/amd64"]="amd64")
+
+          while IFS= read -r line || [ -n "$line" ]; do
+            set -- $line
+            origin=$1
+            origin_tag=$2
+            image_name=$3
+            target=${{ secrets.TENCENT_REGISTRY_ADDRESS }}/${{ secrets.TENCENT_REGISTRY_NAME_SPACE }}/$3
+            target_tag=$4
+
+            supported_tags=()
+
+            for platform in "${!platform_tags[@]}"; do
+              platform_tag="${platform_tags[$platform]}"
+
+              if ! docker pull --platform $platform $origin:$origin_tag; then
+                echo "--$image_name-- Image does not support $platform_tag. Proceeding with the next architecture"
+                continue
+              fi
+
+              supported_tags+=("$platform_tag")
+
+              if ! docker pull $target:$platform_tag; then
+                echo "--$image_name-- Image not found in target registry. Proceeding with push."
+                docker tag $origin:$origin_tag $target:$platform_tag
+                docker push $target:$platform_tag
+                docker image rmi $origin:$origin_tag
+                docker image rmi $target:$platform_tag
+                continue
+              fi
+
+              origin_digest=$(docker inspect --format='{{index .RepoDigests 0}}' $origin:$origin_tag)
+              target_digest=$(docker inspect --format='{{index .RepoDigests 0}}' $target:$platform_tag)
+
+              if [ "$origin_digest" = "$target_digest" ]; then
+                echo "--$image_name-- Images are the same. Skipping push to target registry."
+              else
+                echo "--$image_name-- Images are different. Proceeding with push to target registry."
+                docker tag $origin:$origin_tag $target:$platform_tag
+                docker push $target:$platform_tag
+              fi
+
+              docker image rmi $origin:$origin_tag
+              docker image rmi $target:$platform_tag
+            done
+
+            manifest_command="docker manifest create $target:$target_tag"
+            for supported_tag in "${supported_tags[@]}"; do
+              manifest_command+=" --amend $target:$supported_tag"
+            done
+            eval $manifest_command
+            docker manifest push $target:$target_tag
+
+          done < images.txt
