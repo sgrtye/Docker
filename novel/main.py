@@ -19,12 +19,6 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
 logger = logging.getLogger("my_app")
 logger.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
@@ -224,7 +218,7 @@ def successful_fetch() -> None:
     proxy_index = (proxy_index + 1) % len(proxies)
     last_updated_time = time.time()
 
-    logging.debug(f"Book fetched successfully for {books[book_index][BOOK_TITLE_INDEX]}")
+    logger.debug(f"Book fetched successfully for {books[book_index][BOOK_TITLE_INDEX]}")
 
 
 def failed_fetch(e: Exception) -> None:
@@ -233,7 +227,7 @@ def failed_fetch(e: Exception) -> None:
 
     loop_index += 1
     proxy_index = (proxy_index + 1) % len(proxies)
-    logging.debug(f"Failed to fetch for {books[book_index][BOOK_TITLE_INDEX]}")
+    logger.debug(f"Failed to fetch for {books[book_index][BOOK_TITLE_INDEX]}")
 
     if loop_index == len(proxies):
         save_titles()
@@ -245,7 +239,7 @@ def failed_fetch(e: Exception) -> None:
 
 
 async def update_book() -> None:
-    logging.debug(f"Try to fetch updates for {books[book_index][BOOK_TITLE_INDEX]}")
+    logger.debug(f"Try to fetch updates for {books[book_index][BOOK_TITLE_INDEX]}")
     ip, port, username, password = proxies[proxy_index]
     proxy: dict[str, str] = {
         "http": f"http://{username}:{password}@{ip}:{port}",
@@ -277,12 +271,13 @@ async def update_book() -> None:
                 books[book_index][BOOK_TITLE_INDEX]
             )
             titles[books[book_index][BOOK_TITLE_INDEX]] = title
+            successful_fetch()
 
     except Exception as e:
-        logging.error(
+        logger.error(
             f"Error occurred when checking {books[book_index][BOOK_TITLE_INDEX]} with proxy {ip}:{port}"
         )
-        logging.error(
+        logger.error(
             f"Error occurred during iteration {loop_index} on line {e.__traceback__.tb_lineno}"
         )
         failed_fetch(e)
