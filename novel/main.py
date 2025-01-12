@@ -1,24 +1,34 @@
 import os
 import time
 import json
-import signal
 import random
 import telebot
+import asyncio
 
-import threading
-import http.server
-import socketserver
+import signal
+import platform
 
 from lxml import etree
-from curl_cffi import requests
+from curl_cffi.requests import AsyncSession
+
+from fastapi import FastAPI
+from uvicorn import Config, Server
+from fastapi.responses import JSONResponse
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+logger = logging.getLogger("my_app")
+logger.setLevel(logging.INFO)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    fmt="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+logger.propagate = False
 
 BOOK_URL: str | None = os.environ.get("BOOK_URL")
 PROXY_URL: str | None = os.environ.get("PROXY_URL")
@@ -31,15 +41,62 @@ if (
     or BOOK_URL is None
     or PROXY_URL is None
 ):
-    logging.critical("Environment variables not fulfilled")
+    logger.critical("Environment variables not fulfilled")
     raise SystemExit(0)
 
 IP_PATH: str = "/config/ip.txt"
 BOOK_PATH: str = "/config/book.txt"
 CACHE_PATH: str = "/cache/cache.json"
 
+BOOK_ID_INDEX = 0
+BOOK_TITLE_INDEX = 1
+
+bot = telebot.TeleBot(TELEBOT_TOKEN)
+last_updated_time: float = time.time()
+
+titles: dict[str, str] = dict()
+books: list[tuple[str, str]] = []
+proxies: list[tuple[str, str, str, str]] = []
+
+book_index: int = 0
+proxy_index: int = 0
+loop_index: int = 0
+
+
+app = FastAPI()
+NO_CACHE_HEADER = {
+    "Content-Type": "application/json",
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
+
+@app.get("/health")
+async def health_endpoint() -> JSONResponse:
+    if time.time() - last_updated_time < 1200:
+        return JSONResponse(content={"message": "OK"}, headers=NO_CACHE_HEADER)
+    else:
+        return JSONResponse(
+            content={"message": "DELAYED"},
+            status_code=500,
+            headers=NO_CACHE_HEADER,
+        )
+
+
+@app.get("/update")
+async def update_endpoint() -> JSONResponse:
+    payload = {
+        name: (titles.get(name, "Unknown"), BOOK_URL.replace("BOOK_ID", id))
+        for id, name in books
+    }
+    return JSONResponse(content=payload, headers=NO_CACHE_HEADER)
+
 
 def load_unavailable_ips() -> list[str]:
+    if not os.path.exists(IP_PATH):
+        return []
+
     unavailable_ips = []
 
     with open(IP_PATH, "r") as file:
@@ -51,10 +108,11 @@ def load_unavailable_ips() -> list[str]:
     return unavailable_ips
 
 
-def load_proxies() -> list[tuple[str, str, str, str]]:
+async def load_proxies() -> None:
     try:
-        proxies = []
-        response = requests.get(PROXY_URL)
+        result = []
+        async with AsyncSession() as session:
+            response = await session.get(PROXY_URL)
 
         if response.status_code != 200:
             raise Exception("Proxy server not responding")
@@ -65,22 +123,24 @@ def load_proxies() -> list[tuple[str, str, str, str]]:
         for ip_entry in ip_list:
             ip, port, username, password = ip_entry.rstrip("\r").split(":")
             if ip not in load_unavailable_ips():
-                proxies.append((ip, port, username, password))
+                result.append((ip, port, username, password))
 
-        if len(proxies) == 0:
-            raise Exception("No available proxy")
+        random.shuffle(result)
 
-        random.shuffle(proxies)
-
-        return proxies
+        global proxies
+        proxies = result
 
     except Exception as e:
-        logging.error(f"When loading proxies: {repr(e)}")
-        bot.send_message(TELEBOT_USER_ID, repr(e))
+        logger.error(f"When loading proxies: {repr(e)}")
+        bot.send_message(TELEBOT_USER_ID, f"When loading proxies: {repr(e)}")
 
 
-def load_books() -> list[tuple[str, str]]:
-    books = []
+def load_books() -> None:
+    if not os.path.exists(BOOK_PATH):
+        logger.critical("Loading books failed")
+        raise SystemExit(0)
+
+    result = []
 
     with open(BOOK_PATH, "r") as file:
         lines = file.readlines()
@@ -90,39 +150,46 @@ def load_books() -> list[tuple[str, str]]:
             continue
 
         number, name = line.strip().split(":")
-        books.append((number, name))
+        result.append((number, name))
 
-    return books
-
-
-def load_cache() -> dict[str, str]:
-    titles = dict()
-
-    if os.path.exists(CACHE_PATH):
-        with open(CACHE_PATH, "r") as file:
-            titles = json.load(file)
-            book_name = set(name for _, name in books)
-            book_name_previous = set(name + "previous" for _, name in books)
-            dict_copy = titles.copy()
-
-            for book in dict_copy.keys():
-                if book not in book_name and book not in book_name_previous:
-                    del titles[book]
-
-    return titles
+    global books
+    books = result
 
 
-def get_url_html(url, proxy=None) -> str | None:
+def load_titles() -> None:
+    if not os.path.exists(CACHE_PATH):
+        return
+
+    result = dict()
+
+    with open(CACHE_PATH, "r") as file:
+        result = json.load(file)
+        book_name = set(name for _, name in books)
+        book_name_previous = set(name + "previous" for _, name in books)
+        dict_copy = result.copy()
+
+        for book in dict_copy.keys():
+            if book not in book_name and book not in book_name_previous:
+                del result[book]
+
+    global titles
+    titles = result
+
+
+async def get_url_html(url, proxy=None) -> str | None:
     try:
-        request = requests.get(url, impersonate="chrome", proxies=proxy)
-        request.encoding = "gbk"
-        return request.text
+        async with AsyncSession() as session:
+            response = await session.get(url, impersonate="chrome", proxies=proxy)
 
-    except Exception as e:
+        response.encoding = "gbk"
+        return response.text
+
+    except Exception:
         if proxy is None:
-            logging.error("Error occurred when using native ip")
+            logger.error("The following error occurred when using native ip")
             return None
-        raise e
+
+        raise
 
 
 def extract_book_title(html) -> str | None:
@@ -135,9 +202,80 @@ def extract_book_title(html) -> str | None:
         span_element = div_element.xpath("./ul/li[1]/a/span")[0]
         return span_element.text
 
+    except Exception:
+        logger.error("The following error occurred when extracting book title")
+        raise
+
+
+def successful_fetch() -> None:
+    global loop_index
+    global book_index
+    global proxy_index
+    global last_updated_time
+
+    loop_index = 0
+    book_index = (book_index + 1) % len(books)
+    proxy_index = (proxy_index + 1) % len(proxies)
+    last_updated_time = time.time()
+
+
+def failed_fetch(e: Exception) -> None:
+    global loop_index
+    global proxy_index
+
+    loop_index += 1
+    proxy_index = (proxy_index + 1) % len(proxies)
+
+    if loop_index == len(proxies):
+        save_titles()
+        bot.send_message(
+            TELEBOT_USER_ID, f"Novel monitor terminating from error {repr(e)}"
+        )
+        logging.critical("Program terminated with all titles saved")
+        raise SystemExit(0)
+
+
+async def update_book() -> None:
+    ip, port, username, password = proxies[proxy_index]
+    proxy: dict[str, str] = {
+        "http": f"http://{username}:{password}@{ip}:{port}",
+        "https": f"http://{username}:{password}@{ip}:{port}",
+    }
+
+    try:
+        url = BOOK_URL.replace("BOOK_ID", books[book_index][BOOK_ID_INDEX])
+        html = await get_url_html(url, proxy)
+        title = extract_book_title(html)
+
+        if title != titles.get(books[book_index][BOOK_TITLE_INDEX]):
+            if title == titles.get(books[book_index][BOOK_TITLE_INDEX] + "previous"):
+                successful_fetch()
+                return
+
+            verified_title = extract_book_title(await get_url_html(url))
+            if verified_title is not None and title != verified_title:
+                successful_fetch()
+                return
+
+            if titles.get(books[book_index][BOOK_TITLE_INDEX]) is not None:
+                bot.send_message(
+                    TELEBOT_USER_ID,
+                    f"{books[book_index][BOOK_TITLE_INDEX]}\n'{titles.get(books[book_index][BOOK_TITLE_INDEX])}'\n->'{title}'\n{url}",
+                )
+
+            titles[books[book_index][BOOK_TITLE_INDEX] + "previous"] = titles.get(
+                books[book_index][BOOK_TITLE_INDEX]
+            )
+            titles[books[book_index][BOOK_TITLE_INDEX]] = title
+
     except Exception as e:
-        logging.error("The following error occurred when extracting book title")
-        raise e
+        logging.error(
+            f"Error occurred when checking {books[book_index][BOOK_TITLE_INDEX]} with proxy {ip}:{port}"
+        )
+        logging.error(
+            f"Error occurred during iteration {loop_index} on line {e.__traceback__.tb_lineno}"
+        )
+        failed_fetch(e)
 
 
 def save_titles() -> None:
@@ -147,139 +285,66 @@ def save_titles() -> None:
 
 def handle_sigterm(signum, frame) -> None:
     save_titles()
-    logging.info("Title saved before exiting")
+    logger.info("Title saved before exiting")
     raise SystemExit(0)
 
 
-class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
-    def log_message(self, format, *args) -> None:
-        # Override the log_message method to do nothing
-        pass
-
-    def do_GET(self) -> None:
-        if self.path == "/update":
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-
-            payload = {
-                name: (titles.get(name, "Unknown"), BOOK_URL.replace("BOOK_ID", id))
-                for id, name in books
-            }
-            response = json.dumps(payload)
-            self.wfile.write(response.encode("utf-8"))
-        elif self.path == "/health":
-            if time.time() - last_updated_time > loop_time:
-                self.send_response(500)
-                response = json.dumps({"status": "delayed"})
-            else:
-                self.send_response(200)
-                response = json.dumps({"status": "ok"})
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            self.wfile.write(response.encode("utf-8"))
-        else:
-            self.send_response(404)
-            self.send_header("Content-type", "text/plain")
-            self.end_headers()
-            self.wfile.write(b"Not Found")
+async def start_api_server() -> None:
+    config = Config(app=app, host="0.0.0.0", port=80, log_level="critical")
+    await Server(config).serve()
 
 
-def start_api_server() -> None:
-    with socketserver.TCPServer(("0.0.0.0", 80), HealthCheckHandler) as httpd:
-        httpd.serve_forever()
+def schedule_tasks() -> None:
+    scheduler = AsyncIOScheduler()
+
+    scheduler.add_job(
+        update_book,
+        "interval",
+        minutes=60 // len(proxies),
+    )
+
+    scheduler.add_job(
+        save_titles,
+        "cron",
+        hour=10,
+        minute=24,
+    )
+
+    scheduler.add_job(
+        load_proxies,
+        "cron",
+        hour=20,
+        minute=48,
+    )
+
+    scheduler.start()
+
+
+async def main() -> None:
+    load_books()
+    load_titles()
+    await load_proxies()
+
+    if not proxies:
+        logger.critical("No proxy available")
+        raise SystemExit(0)
+
+    match platform.system():
+        case "Linux":
+            asyncio.get_running_loop().add_signal_handler(
+                signal.SIGTERM, handle_sigterm
+            )
+            logger.info("Signal handler for SIGTERM is registered.")
+
+        case _:
+            logger.info("Signal handler registration skipped.")
+            pass
+
+    schedule_tasks()
+    logger.info("Novel monitor started")
+
+    await start_api_server()
 
 
 if __name__ == "__main__":
-    bot = telebot.TeleBot(TELEBOT_TOKEN)
-
-    proxies = load_proxies()
-    if not proxies:
-        raise SystemExit(0)
-
-    books = load_books()
-    i: int = 0
-    j: int = 0
-    last_updated_time = time.time()
-    loop_time = len(books) * 5 * 60
-    sleep_interval = loop_time / len(books)
-
-    titles = load_cache()
-
-    threading.Thread(target=start_api_server, daemon=True).start()
-
-    signal.signal(signal.SIGTERM, handle_sigterm)
-
-    logging.info("Novel monitor started")
-
-    try:
-        while True:
-            for index in range(len(proxies)):
-                j = (j + 1) % len(proxies)
-
-                ip, port, username, password = proxies[j]
-                # proxy = f"{username}:{password}@{ip}:{port}"
-                proxy: dict[str, str] = {
-                    "http": f"http://{username}:{password}@{ip}:{port}",
-                    "https": f"http://{username}:{password}@{ip}:{port}",
-                }
-
-                try:
-                    url = BOOK_URL.replace("BOOK_ID", books[i][0])
-                    html = get_url_html(url, proxy)
-                    title = extract_book_title(html)
-
-                    if title != titles.get(books[i][1]):
-                        if title == titles.get(books[i][1] + "previous"):
-                            break
-
-                        verified_title = extract_book_title(get_url_html(url))
-                        if verified_title is not None and title != verified_title:
-                            break
-
-                        if titles.get(books[i][1]) is not None:
-                            bot.send_message(
-                                TELEBOT_USER_ID,
-                                f"{books[i][1]}\n'{titles.get(books[i][1])}'\n->'{title}'\n{url}",
-                            )
-
-                        titles[books[i][1] + "previous"] = titles.get(books[i][1])
-                        titles[books[i][1]] = title
-
-                    break
-
-                except Exception as e:
-                    logging.error(
-                        f"Error occurred when checking {books[i][1]} with proxy {ip}:{port}"
-                    )
-                    logging.error(
-                        f"Error occurred during iteration {index} on line {e.__traceback__.tb_lineno}"
-                    )
-                    time.sleep(sleep_interval)
-                    if index == len(proxies) - 1:
-                        raise e
-
-            current_time = time.time()
-            if (
-                time.localtime(current_time).tm_mday
-                != time.localtime(last_updated_time).tm_mday
-            ):
-                proxies = load_proxies()
-                save_titles()
-
-            last_updated_time = current_time
-            time.sleep(sleep_interval)
-            i = (i + 1) % len(books)
-
-    except SystemExit:
-        raise
-
-    except Exception as e:
-        bot.send_message(
-            TELEBOT_USER_ID, "Novel monitor encountered unexpected exception"
-        )
-        bot.send_message(
-            TELEBOT_USER_ID,
-            f"The exception occurred when processing book {books[i][1]} with error message: {repr(e)}",
-        )
-        logging.critical("Error occurred, program terminated")
+    asyncio.run(main())
