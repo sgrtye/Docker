@@ -39,14 +39,12 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(b"Not Found")
 
 
-def start_health_server():
+def start_api_server():
     with socketserver.TCPServer(("0.0.0.0", 80), HealthCheckHandler) as httpd:
         httpd.serve_forever()
 
 
-health_thread = threading.Thread(target=start_health_server)
-health_thread.daemon = True
-health_thread.start()
+threading.Thread(target=start_api_server, daemon=True).start()
 
 logger.info("Starting")
 
