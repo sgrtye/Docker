@@ -1,11 +1,11 @@
 import os
 import json
 import docker
+import asyncio
 
 import httpx
-import asyncio
-from telegram import Update, BotCommand
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telebot.types import Message, BotCommand
+from telebot.async_telebot import AsyncTeleBot
 
 import logging
 
@@ -23,10 +23,18 @@ logger.propagate = False
 NOVEL_URL: str | None = os.environ.get("NOVEL_URL")
 GLANCES_URL: str | None = os.environ.get("GLANCES_URL")
 TELEBOT_TOKEN: str | None = os.environ.get("TELEBOT_TOKEN")
+TELEBOT_USER_ID: str | None = os.environ.get("TELEBOT_USER_ID")
 
-if NOVEL_URL is None or GLANCES_URL is None or TELEBOT_TOKEN is None:
+if (
+    NOVEL_URL is None
+    or GLANCES_URL is None
+    or TELEBOT_TOKEN is None
+    or TELEBOT_USER_ID is None
+):
     logger.critical("Environment variables not fulfilled")
     raise SystemExit(0)
+
+bot = AsyncTeleBot(TELEBOT_TOKEN)
 
 
 def markdown_v2_encode(reply) -> str:
@@ -41,7 +49,7 @@ def default_encode(reply) -> str:
 
 async def container_usage() -> list[str]:
     async with httpx.AsyncClient() as client:
-        response = client.get(GLANCES_URL)
+        response = await client.get(GLANCES_URL)
 
     if response.status_code != 200:
         return ["Container usage is not currently available"]
@@ -81,7 +89,7 @@ async def container_usage() -> list[str]:
 
 async def novel_update() -> list[str]:
     async with httpx.AsyncClient() as client:
-        response = client.get(NOVEL_URL)
+        response = await client.get(NOVEL_URL)
 
     if response.status_code != 200:
         return ["Novel update is not currently available"]
@@ -120,49 +128,52 @@ def restore() -> list[str]:
     return reply
 
 
-async def handle_info_command(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
-    await update.message.reply_text(
-        markdown_v2_encode(await container_usage()), parse_mode="MarkdownV2"
+def is_authorized(message: Message) -> bool:
+    return message.from_user.id == TELEBOT_USER_ID
+
+
+@bot.message_handler(commands=["info"])
+async def handle_info_command(message: Message) -> None:
+    if not is_authorized(message):
+        await bot.reply_to(message, "?????????????????????????")
+        return
+
+    await bot.reply_to(
+        message, markdown_v2_encode(await container_usage()), parse_mode="MarkdownV2"
     )
 
 
-async def handle_novel_update_command(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
-    await update.message.reply_text(await novel_update())
+@bot.message_handler(commands=["novel"])
+async def handle_novel_update_command(message: Message) -> None:
+    if not is_authorized(message):
+        await bot.reply_to(message, "?????????????????????????")
+        return
+
+    await bot.reply_to(message, default_encode(await novel_update()), parse_mode=None)
 
 
-async def handle_container_restore_command(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
-    await update.message.reply_text(
-        markdown_v2_encode(restore()), parse_mode="MarkdownV2"
-    )
+@bot.message_handler(commands=["restore"])
+async def handle_container_restore_command(message: Message) -> None:
+    if not is_authorized(message):
+        await bot.reply_to(message, "?????????????????????????")
+        return
+
+    await bot.reply_to(message, markdown_v2_encode(restore()), parse_mode="MarkdownV2")
 
 
 async def main() -> None:
     # Booting up all containers that were not turned off manually
     restore()
 
-    application = Application.builder().token(TELEBOT_TOKEN).build()
-
-    application.add_handler(CommandHandler("info", handle_info_command))
-    application.add_handler(CommandHandler("novel", handle_novel_update_command))
-    application.add_handler(CommandHandler("restore", handle_container_restore_command))
-
-    await application.bot.set_my_commands(
-        [
-            BotCommand("info", "Get server usage status"),
-            BotCommand("novel", "Get novel latest chapters"),
-            BotCommand("restore", "Restart all exited containers"),
-        ]
-    )
+    commands: list[BotCommand] = [
+        BotCommand("info", "Get server usage status"),
+        BotCommand("novel", "Get novel latest chapters"),
+        BotCommand("restore", "Restart all exited containers"),
+    ]
 
     logger.info("Telegram bot started")
-    await application.start_polling()
-    await application.wait_closed()
+    await bot.set_my_commands(commands)
+    await bot.infinity_polling()
 
 
 if __name__ == "__main__":
