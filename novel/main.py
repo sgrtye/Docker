@@ -130,6 +130,8 @@ async def load_proxies() -> None:
         global proxies
         proxies = result
 
+        logger.debug(f"Found {len(proxies)} proxies")
+
     except Exception as e:
         logger.error(f"When loading proxies: {repr(e)}")
         bot.send_message(TELEBOT_USER_ID, f"When loading proxies: {repr(e)}")
@@ -155,9 +157,12 @@ def load_books() -> None:
     global books
     books = result
 
+    logger.debug(f"Found {len(books)} books")
+
 
 def load_titles() -> None:
     if not os.path.exists(CACHE_PATH):
+        logger.debug(f"No cache found for titles")
         return
 
     result = dict()
@@ -174,6 +179,8 @@ def load_titles() -> None:
 
     global titles
     titles = result
+
+    logger.debug(f"Cache loaded for titles")
 
 
 async def get_url_html(url, proxy=None) -> str | None:
@@ -239,14 +246,15 @@ def failed_fetch(e: Exception) -> None:
 
 
 async def update_book() -> None:
-    logger.debug(f"Try to fetch updates for {books[book_index][BOOK_TITLE_INDEX]}")
-    ip, port, username, password = proxies[proxy_index]
-    proxy: dict[str, str] = {
-        "http": f"http://{username}:{password}@{ip}:{port}",
-        "https": f"http://{username}:{password}@{ip}:{port}",
-    }
-
     try:
+        logger.debug(f"Try to fetch updates for {books[book_index][BOOK_TITLE_INDEX]}")
+
+        ip, port, username, password = proxies[proxy_index]
+        proxy: dict[str, str] = {
+            "http": f"http://{username}:{password}@{ip}:{port}",
+            "https": f"http://{username}:{password}@{ip}:{port}",
+        }
+
         url = BOOK_URL.replace("BOOK_ID", books[book_index][BOOK_ID_INDEX])
         html = await get_url_html(url, proxy)
         title = extract_book_title(html)
