@@ -129,7 +129,7 @@ def restore() -> list[str]:
 
 
 def is_authorized(message: Message) -> bool:
-    return message.from_user.id == TELEBOT_USER_ID
+    return str(message.from_user.id) == TELEBOT_USER_ID
 
 
 @bot.message_handler(commands=["info"])
