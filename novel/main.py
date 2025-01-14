@@ -4,6 +4,7 @@ import json
 import random
 import telebot
 import asyncio
+from collections import deque
 
 import signal
 import platform
@@ -46,7 +47,7 @@ if (
 
 IP_PATH: str = "/config/ip.txt"
 BOOK_PATH: str = "/config/book.txt"
-CACHE_PATH: str = "/cache/cache.json"
+CACHE_PATH: str = "/config/cache.json"
 
 BOOK_ID_INDEX = 0
 BOOK_TITLE_INDEX = 1
@@ -54,7 +55,7 @@ BOOK_TITLE_INDEX = 1
 bot = telebot.TeleBot(TELEBOT_TOKEN)
 last_updated_time: float = time.time()
 
-titles: dict[str, str] = dict()
+titles: dict[str, deque[str]] = dict()
 books: list[tuple[str, str]] = []
 proxies: list[tuple[str, str, str, str]] = []
 
@@ -87,7 +88,10 @@ async def health_endpoint() -> JSONResponse:
 @app.get("/update")
 async def update_endpoint() -> JSONResponse:
     payload = {
-        name: (titles.get(name, "Unknown"), BOOK_URL.replace("BOOK_ID", id))
+        name: (
+            titles[name][-1] if titles[name] else "Unknown",
+            BOOK_URL.replace("BOOK_ID", id),
+        )
         for id, name in books
     }
     return JSONResponse(content=payload, headers=NO_CACHE_HEADER)
@@ -127,14 +131,14 @@ async def load_proxies() -> None:
 
         random.shuffle(result)
 
-        global proxies
-        proxies = result
-
-        logger.debug(f"Found {len(proxies)} proxies")
-
     except Exception as e:
-        logger.error(f"When loading proxies: {repr(e)}")
+        logger.error(f"Loading proxies failed with {repr(e)}")
         bot.send_message(TELEBOT_USER_ID, f"When loading proxies: {repr(e)}")
+
+    global proxies
+    proxies = result
+
+    logger.info(f"Found {len(proxies)} proxies")
 
 
 def load_books() -> None:
@@ -142,45 +146,52 @@ def load_books() -> None:
         logger.critical("Loading books failed")
         raise SystemExit(0)
 
-    result = []
+    try:
+        result = []
 
-    with open(BOOK_PATH, "r") as file:
-        lines = file.readlines()
+        with open(BOOK_PATH, "r") as file:
+            lines = file.readlines()
 
-    for line in lines:
-        if line.startswith("//"):
-            continue
+        for line in lines:
+            if line.startswith("//"):
+                continue
 
-        number, name = line.strip().split(":")
-        result.append((number, name))
+            number, name = line.strip().split(":")
+            result.append((number, name))
+
+    except Exception as e:
+        logger.critical(f"Loading books failed with {repr(e)}")
+        raise SystemExit(0)
 
     global books
     books = result
 
-    logger.debug(f"Found {len(books)} books")
+    logger.info(f"Found {len(books)} books")
 
 
 def load_titles() -> None:
     if not os.path.exists(CACHE_PATH):
-        logger.debug(f"No cache found for titles")
+        logger.info(f"No cache found for titles")
         return
 
-    result = dict()
+    try:
+        result = {name: deque(maxlen=5) for _, name in books}
 
-    with open(CACHE_PATH, "r") as file:
-        result = json.load(file)
-        book_name = set(name for _, name in books)
-        book_name_previous = set(name + "previous" for _, name in books)
-        dict_copy = result.copy()
+        with open(CACHE_PATH, "r") as file:
+            cache = json.load(file)
 
-        for book in dict_copy.keys():
-            if book not in book_name and book not in book_name_previous:
-                del result[book]
+        for k, v in cache.items():
+            if k in result:
+                result[k].extend(v)
+
+    except Exception as e:
+        logger.error(f"Loading titles failed with {repr(e)}")
+        result = {name: deque(maxlen=5) for _, name in books}
 
     global titles
     titles = result
 
-    logger.debug(f"Cache loaded for titles")
+    logger.info(f"Cache loaded for titles")
 
 
 async def get_url_html(url, proxy=None) -> str | None:
@@ -193,7 +204,7 @@ async def get_url_html(url, proxy=None) -> str | None:
 
     except Exception:
         if proxy is None:
-            logger.error("The following error occurred when using native ip")
+            logger.error("Error occurred when using native ip")
             return None
 
         raise
@@ -259,26 +270,19 @@ async def update_book() -> None:
         html = await get_url_html(url, proxy)
         title = extract_book_title(html)
 
-        if title != titles.get(books[book_index][BOOK_TITLE_INDEX]):
-            if title == titles.get(books[book_index][BOOK_TITLE_INDEX] + "previous"):
-                successful_fetch()
-                return
-
+        if title not in titles[books[book_index][BOOK_TITLE_INDEX]]:
             verified_title = extract_book_title(await get_url_html(url))
             if verified_title is not None and title != verified_title:
                 successful_fetch()
                 return
 
-            if titles.get(books[book_index][BOOK_TITLE_INDEX]) is not None:
+            if titles[books[book_index][BOOK_TITLE_INDEX]]:
                 bot.send_message(
                     TELEBOT_USER_ID,
-                    f"{books[book_index][BOOK_TITLE_INDEX]}\n'{titles.get(books[book_index][BOOK_TITLE_INDEX])}'\n->'{title}'\n{url}",
+                    f"{books[book_index][BOOK_TITLE_INDEX]}\n'{titles[books[book_index][BOOK_TITLE_INDEX]][-1]}'\n->'{title}'\n{url}",
                 )
 
-            titles[books[book_index][BOOK_TITLE_INDEX] + "previous"] = titles.get(
-                books[book_index][BOOK_TITLE_INDEX]
-            )
-            titles[books[book_index][BOOK_TITLE_INDEX]] = title
+            titles[books[book_index][BOOK_TITLE_INDEX]].append(title)
 
         successful_fetch()
 
@@ -294,7 +298,8 @@ async def update_book() -> None:
 
 def save_titles() -> None:
     with open(CACHE_PATH, "w") as file:
-        json.dump(titles, file)
+        content = {k: list(v) for k, v in titles.items()}
+        json.dump(content, file)
 
 
 def handle_termination_signal() -> None:
