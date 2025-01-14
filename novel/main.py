@@ -47,7 +47,7 @@ if (
 
 IP_PATH: str = "/config/ip.txt"
 BOOK_PATH: str = "/config/book.txt"
-CACHE_PATH: str = "/config/cache.json"
+CACHE_PATH: str = "/cache/cache.json"
 
 BOOK_ID_INDEX = 0
 BOOK_TITLE_INDEX = 1
