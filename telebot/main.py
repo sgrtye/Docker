@@ -100,7 +100,7 @@ async def novel_update() -> list[str]:
     data_dict: dict[str, list[str, str]] = json.loads(content)
 
     for novel, (title, url) in data_dict.items():
-        reply.append(f"{novel}: \n{title}\n{url}")
+        reply.append(f"{novel}: \n{title[:15]}\n{url}")
 
     return reply
 
@@ -173,7 +173,7 @@ async def main() -> None:
 
     logger.info("Telegram bot started")
     await bot.set_my_commands(commands)
-    await bot.infinity_polling(logger_level=None)
+    await bot.infinity_polling()
 
 
 if __name__ == "__main__":
