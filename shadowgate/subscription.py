@@ -19,17 +19,19 @@ logger.addHandler(handler)
 logger.propagate = False
 
 
-def get_static_config(file_name: str) -> FileResponse | None:
+def get_static_config(file_name: str, client: dict[str, str]) -> FileResponse | None:
     if os.path.exists(f"/conf/{file_name}"):
+        logger.info(f"{client["name"]} accessed {file_name}")
         return FileResponse(f"/conf/{file_name}")
 
     return None
 
 
-def get_mitce_config(request: Request) -> FileResponse | None:
+def get_mitce_config(request: Request, client: dict[str, str]) -> FileResponse | None:
     user_agent = request.headers.get("user-agent", "Unknown").lower()
 
     if "shadowrocket" in user_agent and os.path.exists(MITCE_SHADOWROCKET_PATH):
+        logger.info(f"{client["name"]} accessed config.yaml using Shadowrocket")
         return FileResponse(
             MITCE_SHADOWROCKET_PATH,
             media_type="application/octet-stream",
@@ -42,6 +44,7 @@ def get_mitce_config(request: Request) -> FileResponse | None:
             with open(MITCE_CLASH_USERINFO_PATH, "r") as file:
                 user_info = file.read()
 
+        logger.info(f"{client["name"]} accessed config.yaml using Clash")
         return FileResponse(
             MITCE_CLASH_PATH,
             media_type="application/x-yaml",
@@ -63,9 +66,9 @@ async def get_config_file(request: Request, tail: str) -> Response:
         # Provide static files only for the main user
         if (
             client["name"] == "SGRTYE"
-            and (response := get_static_config("/".join(path_parts[1:]))) is not None
+            and (response := get_static_config("/".join(path_parts[1:]), client))
+            is not None
         ):
-            logger.info(f"{client["name"]} accessed {path_parts[-1]}")
             return response
 
         # Return mitce config by default
@@ -73,9 +76,8 @@ async def get_config_file(request: Request, tail: str) -> Response:
             len(path_parts) == 4
             and path_parts[2] in ["yidong", "liantong", "dianxin"]
             and path_parts[3] == "config.yaml"
-            and (response := get_mitce_config(request)) is not None
+            and (response := get_mitce_config(request, client)) is not None
         ):
-            logger.info(f"{client["name"]} accessed {path_parts[-1]}")
             return response
 
     raise HTTPException(status_code=404, detail="Not Found")
