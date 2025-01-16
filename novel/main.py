@@ -289,7 +289,7 @@ async def update_book() -> None:
 
     except Exception as e:
         logger.error(
-            f"Error occurred when checking {books[book_index][BOOK_TITLE_INDEX]} with proxy {ip}:{port}"
+            f"Error {repr(e)} occurred when checking {books[book_index][BOOK_TITLE_INDEX]} with proxy {ip}:{port}"
         )
         logger.error(
             f"Error occurred during iteration {loop_index} on line {e.__traceback__.tb_lineno}"
