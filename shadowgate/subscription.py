@@ -27,7 +27,7 @@ def get_static_config(file_name: str) -> FileResponse | None:
 
 
 def get_mitce_config(request: Request) -> FileResponse | None:
-    user_agent = request.headers.get("user-agent", "Unknown")
+    user_agent = request.headers.get("user-agent", "Unknown").lower()
 
     if "shadowrocket" in user_agent and os.path.exists(MITCE_SHADOWROCKET_PATH):
         return FileResponse(
