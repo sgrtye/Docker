@@ -58,27 +58,29 @@ def get_mitce_config(request: Request, client: dict[str, str]) -> FileResponse |
 async def get_config_file(request: Request, tail: str) -> Response:
     path_parts = tail.split("/")
     clients = await get_clients()
+    user_agent = request.headers.get("user-agent", "Unknown").lower()
 
-    for client in clients:
-        if path_parts[0] != client["prefix"]:
-            continue
+    if any(agent in user_agent for agent in ["shadowrocket", "clash"]):
+        for client in clients:
+            if path_parts[0] != client["prefix"]:
+                continue
 
-        # Provide static files only for the main user
-        if (
-            client["name"] == "SGRTYE"
-            and (response := get_static_config("/".join(path_parts[1:]), client))
-            is not None
-        ):
-            return response
+            # Provide static files only for the main user
+            if (
+                client["name"] == "SGRTYE"
+                and (response := get_static_config("/".join(path_parts[1:]), client))
+                is not None
+            ):
+                return response
 
-        # Return mitce config by default
-        if (
-            len(path_parts) == 4
-            and path_parts[2] in ["yidong", "liantong", "dianxin"]
-            and path_parts[3] == "config.yaml"
-            and (response := get_mitce_config(request, client)) is not None
-        ):
-            return response
+            # Return mitce config by default
+            if (
+                len(path_parts) == 4
+                and path_parts[2] in ["yidong", "liantong", "dianxin"]
+                and path_parts[3] == "config.yaml"
+                and (response := get_mitce_config(request, client)) is not None
+            ):
+                return response
 
     raise HTTPException(status_code=404, detail="Not Found")
 
