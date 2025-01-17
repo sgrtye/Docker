@@ -21,9 +21,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import logging
 
 logger = logging.getLogger("my_app")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter(
     fmt="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
@@ -217,6 +217,7 @@ def extract_book_title(html) -> str | None:
         return None
 
     try:
+        logger.debug(html[:100])
         tree = etree.HTML(html, parser=None)
         element = tree.xpath("//*[@id='catalog']/ul/li[1]/a")
         return element[0].text
