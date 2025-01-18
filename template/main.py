@@ -3,18 +3,6 @@ import threading
 import http.server
 import socketserver
 
-import logging
-
-logger = logging.getLogger("my_app")
-logger.setLevel(logging.INFO)
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-formatter = logging.Formatter(
-    fmt="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-)
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
-logger.propagate = False
 
 lastUpdatedTime = time.time()
 
@@ -45,8 +33,6 @@ def start_api_server():
 
 
 threading.Thread(target=start_api_server, daemon=True).start()
-
-logger.info("Starting")
 
 while True:
     time.sleep(10)
