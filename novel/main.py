@@ -218,8 +218,9 @@ def extract_book_title(html) -> str | None:
     try:
         logger.debug(html[:100])
         tree = etree.HTML(html, parser=None)
-        element = tree.xpath("//*[@id='catalog']/ul/li[1]/a")
-        return element[0].text
+        div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
+        span_element = div_element.xpath("./ul/li[1]/a/span")[0]
+        return span_element.text
 
     except Exception:
         logger.error("The following error occurred when extracting book title")
