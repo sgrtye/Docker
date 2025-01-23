@@ -74,12 +74,15 @@ NO_CACHE_HEADER = {
 
 @app.get("/health")
 async def health_endpoint() -> JSONResponse:
-    if (current_time := time.time()) - last_updated_time < 1200:
-        return JSONResponse(content={"message": "OK"}, headers=NO_CACHE_HEADER)
+    if (time_delta := time.time() - last_updated_time) < 1200:
+        return JSONResponse(
+            content={"message": f"<OK> {time_delta} seconds since the last update."},
+            headers=NO_CACHE_HEADER,
+        )
     else:
         return JSONResponse(
             content={
-                "message": f"Delayed for {current_time - last_updated_time} seconds. ({last_updated_time} -> {current_time})."
+                "message": f"<Delayed> {time_delta} seconds since the last update."
             },
             status_code=500,
             headers=NO_CACHE_HEADER,
