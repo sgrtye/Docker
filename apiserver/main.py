@@ -86,7 +86,7 @@ NO_CACHE_HEADER = {
 @app.get("/health")
 async def health_endpoint():
     time_delta = time.time() - last_updated_time
-    if time_delta <= (60 // (len(MAPPING) + 1)) * 60:
+    if time_delta <= (60 // (len(MAPPING) - 1)) * 60:
         return JSONResponse(
             content={"message": f"<OK> {time_delta} seconds since the last update."},
             headers=NO_CACHE_HEADER,
