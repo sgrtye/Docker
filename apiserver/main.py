@@ -192,6 +192,7 @@ async def update_xui_status() -> None:
 
     try:
         xui_status.update(await get_xui_status())
+
     # Exception handled by displaying the above default values
     except Exception:
         pass
@@ -240,17 +241,24 @@ def get_info_by_ticker(tickers: str) -> dict[str, str]:
 
 def load_cache() -> None:
     if not os.path.exists(CACHE_PATH):
+        logger.info("No cache file found.")
         return
 
     with open(CACHE_PATH, "r") as file:
         cache: dict[str, str] = json.load(file)
 
-    for symbol, status in MAPPING.items():
-        symbols: list[str] = symbol.split()
+    for all_symbol, status in MAPPING.items():
+        symbols: list[str] = all_symbol.split()
+
+        for symbol in symbols:
+            status[symbol] = "-"
+            status[symbol + TREND_ENDING] = "0"
 
         for ticker, value in cache.items():
             if ticker.removesuffix(TREND_ENDING) in symbols:
                 status[ticker] = value
+
+    logger.info("Cache file loaded successfully.")
 
 
 def update_status(symbols: str) -> None:
