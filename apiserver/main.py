@@ -52,18 +52,14 @@ CRYPTOS: str = "BTC-USD ETH-USD"
 CURRENCIES: str = "GBPCNY=X EURCNY=X CNY=X CADCNY=X"
 COMMODITIES: str = "GC=F CL=F"
 
-STOCK_CACHE_PATH: str = "/cache/stock_cache.json"
-INDEX_CACHE_PATH: str = "/cache/index_cache.json"
-CRYPTO_CACHE_PATH: str = "/cache/crypto_cache.json"
-CURRENCY_CACHE_PATH: str = "/cache/currency_cache.json"
-COMMODITY_CACHE_PATH: str = "/cache/commodity_cache.json"
+CACHE_PATH: str = "/cache/cache.json"
 
-MAPPING: dict[str, tuple[dict[str, str], str]] = {
-    STOCKS: (stock_status, STOCK_CACHE_PATH),
-    INDICES: (index_status, INDEX_CACHE_PATH),
-    CRYPTOS: (crypto_status, CRYPTO_CACHE_PATH),
-    CURRENCIES: (currency_status, CURRENCY_CACHE_PATH),
-    COMMODITIES: (commodity_status, COMMODITY_CACHE_PATH),
+MAPPING: dict[str, dict[str, str]] = {
+    STOCKS: stock_status,
+    INDICES: index_status,
+    CRYPTOS: crypto_status,
+    CURRENCIES: currency_status,
+    COMMODITIES: commodity_status,
 }
 
 xui_session = httpx.AsyncClient()
@@ -86,7 +82,7 @@ NO_CACHE_HEADER = {
 @app.get("/health")
 async def health_endpoint():
     time_delta = time.time() - last_updated_time
-    if time_delta <= (60 // (len(MAPPING) - 1)) * 60:
+    if time_delta <= ((60 // max(len(MAPPING), 1)) + 1) * 60:
         return JSONResponse(
             content={"message": f"<OK> {time_delta} seconds since the last update."},
             headers=NO_CACHE_HEADER,
@@ -124,26 +120,6 @@ async def exchange_endpoint():
         content=crypto_status | currency_status | commodity_status,
         headers=NO_CACHE_HEADER,
     )
-
-
-def load_cache(cache_path: str, symbols: str) -> dict[str, str]:
-    result: dict[str, str] = dict()
-    symbols: list[str] = symbols.split()
-
-    if os.path.exists(cache_path):
-        with open(cache_path, "r") as file:
-            cache: dict[str, str] = json.load(file)
-
-            for ticker, value in cache.items():
-                if ticker.removesuffix(TREND_ENDING) in symbols:
-                    result[ticker] = value
-
-    return result
-
-
-def load_all_cache() -> None:
-    for symbol, (status, cache_path) in MAPPING.items():
-        status.update(load_cache(cache_path, symbol))
 
 
 def format_number(number: float, decimal_place: int = 2) -> str:
@@ -262,15 +238,33 @@ def get_info_by_ticker(tickers: str) -> dict[str, str]:
     return info
 
 
+def load_cache() -> None:
+    if not os.path.exists(CACHE_PATH):
+        return
+
+    with open(CACHE_PATH, "r") as file:
+        cache: dict[str, str] = json.load(file)
+
+    for symbol, status in MAPPING.items():
+        symbols: list[str] = symbol.split()
+
+        for ticker, value in cache.items():
+            if ticker.removesuffix(TREND_ENDING) in symbols:
+                status[ticker] = value
+
+
 def update_status(symbols: str) -> None:
     info = get_info_by_ticker(symbols)
-    MAPPING[symbols][0].update(info)
+    MAPPING[symbols].update(info)
 
 
 def save_status() -> None:
+    cache: dict[str, str] = dict()
     for symbols in MAPPING.keys():
-        with open(MAPPING[symbols][1], "w") as file:
-            json.dump(MAPPING[symbols][0], file)
+        cache.update(MAPPING[symbols])
+
+    with open(CACHE_PATH, "w") as file:
+        json.dump(cache, file)
 
 
 async def start_api_server() -> None:
@@ -307,7 +301,7 @@ def handle_termination_signal() -> None:
 
 
 async def main() -> None:
-    load_all_cache()
+    load_cache()
 
     match platform.system():
         case "Linux":
