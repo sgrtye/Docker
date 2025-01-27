@@ -240,6 +240,13 @@ def get_info_by_ticker(tickers: str) -> dict[str, str]:
 
 
 def load_cache() -> None:
+    for all_symbol, status in MAPPING.items():
+        symbols: list[str] = all_symbol.split()
+
+        for symbol in symbols:
+            status[symbol] = "0"
+            status[symbol + TREND_ENDING] = "0"
+
     if not os.path.exists(CACHE_PATH):
         logger.info("No cache file found.")
         return
@@ -249,10 +256,6 @@ def load_cache() -> None:
 
     for all_symbol, status in MAPPING.items():
         symbols: list[str] = all_symbol.split()
-
-        for symbol in symbols:
-            status[symbol] = "-"
-            status[symbol + TREND_ENDING] = "0"
 
         for ticker, value in cache.items():
             if ticker.removesuffix(TREND_ENDING) in symbols:
