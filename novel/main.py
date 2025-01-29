@@ -138,6 +138,7 @@ async def load_proxies() -> None:
     except Exception as e:
         logger.error(f"Loading proxies failed with {repr(e)}")
         bot.send_message(TELEBOT_USER_ID, f"When loading proxies: {repr(e)}")
+        return
 
     global proxies
     proxies = result
