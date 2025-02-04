@@ -47,7 +47,7 @@ commodity_status: dict[str, str] = dict()
 TREND_ENDING: str = "_TREND"
 
 STOCKS: str = "AAPL GOOG NVDA TSLA"
-INDICES: str = "^IXIC ^GSPC 000001.SS"
+INDICES: str = "^IXIC ^GSPC 000001.SS ^HSI"
 CRYPTOS: str = "BTC-USD ETH-USD"
 CURRENCIES: str = "GBPCNY=X EURCNY=X CNY=X CADCNY=X"
 COMMODITIES: str = "GC=F CL=F"
