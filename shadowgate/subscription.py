@@ -11,7 +11,7 @@ from constants import *
 
 logger = logging.getLogger("config_access")
 logger.setLevel(logging.INFO)
-handler = TimedRotatingFileHandler(CONFIG_ACCESS_LOG_PATH, when="W0", backupCount=4)
+handler = TimedRotatingFileHandler(CONFIG_ACCESS_LOG_PATH, when="W0", backupCount=2)
 formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
