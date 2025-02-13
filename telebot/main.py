@@ -4,8 +4,8 @@ import docker
 import asyncio
 
 import httpx
-from telebot.types import Message, BotCommand
-from telebot.async_telebot import AsyncTeleBot
+from telegram import Update, BotCommand
+from telegram.ext import Application, CommandHandler, CallbackContext
 
 import logging
 
@@ -33,7 +33,7 @@ if (
     logger.critical("Environment variables not fulfilled")
     raise SystemExit(0)
 
-bot = AsyncTeleBot(TELEBOT_TOKEN)
+app = Application.builder().token(TELEBOT_TOKEN).build()
 
 
 def markdown_v2_encode(reply) -> str:
@@ -55,7 +55,7 @@ async def container_usage() -> list[str]:
 
     total_cpu_usage: float = 0
     total_memory_usage: int = 0
-    containers: list[dict] = json.loads(response.content)
+    containers: list[dict] = response.json()
 
     reply: list[str] = []
     reply.append(f"{'Name':<12} {'CPU':<5}  {'Memory':<5}")
@@ -127,42 +127,45 @@ def restore() -> list[str]:
     return reply
 
 
-def is_authorized(message: Message) -> bool:
-    return str(message.from_user.id) == TELEBOT_USER_ID
+def is_authorized(update: Update) -> bool:
+    return str(update.effective_user.id) == TELEBOT_USER_ID
 
 
-@bot.message_handler(commands=["info"])
-async def handle_info_command(message: Message) -> None:
-    if not is_authorized(message):
-        await bot.reply_to(message, "?????????????????????????")
+async def handle_info_command(update: Update, context: CallbackContext) -> None:
+    if not is_authorized(update):
+        await update.message.reply_text("?????????????????????????")
         return
 
-    await bot.reply_to(
-        message, markdown_v2_encode(await container_usage()), parse_mode="MarkdownV2"
+    await update.message.reply_text(
+        markdown_v2_encode(await container_usage()), parse_mode="MarkdownV2"
     )
 
 
-@bot.message_handler(commands=["novel"])
-async def handle_novel_update_command(message: Message) -> None:
-    if not is_authorized(message):
-        await bot.reply_to(message, "?????????????????????????")
+async def handle_novel_command(update: Update, context: CallbackContext) -> None:
+    if not is_authorized(update):
+        await update.message.reply_text("?????????????????????????")
         return
 
-    await bot.reply_to(message, default_encode(await novel_update()), parse_mode=None)
+    await update.message.reply_text(default_encode(await novel_update()))
 
 
-@bot.message_handler(commands=["restore"])
-async def handle_container_restore_command(message: Message) -> None:
-    if not is_authorized(message):
-        await bot.reply_to(message, "?????????????????????????")
+async def handle_restore_command(update: Update, context: CallbackContext) -> None:
+    if not is_authorized(update):
+        await update.message.reply_text("?????????????????????????")
         return
 
-    await bot.reply_to(message, markdown_v2_encode(restore()), parse_mode="MarkdownV2")
+    await update.message.reply_text(
+        markdown_v2_encode(restore()), parse_mode="MarkdownV2"
+    )
 
 
 async def main() -> None:
     # Booting up all containers that were not turned off manually
     restore()
+
+    app.add_handler(CommandHandler("info", handle_info_command))
+    app.add_handler(CommandHandler("novel", handle_novel_command))
+    app.add_handler(CommandHandler("restore", handle_restore_command))
 
     commands: list[BotCommand] = [
         BotCommand("info", "Get server usage status"),
@@ -171,8 +174,8 @@ async def main() -> None:
     ]
 
     logger.info("Telegram bot started")
-    await bot.set_my_commands(commands)
-    await bot.infinity_polling()
+    await app.bot.set_my_commands(commands)
+    await app.run_polling()
 
 
 if __name__ == "__main__":
