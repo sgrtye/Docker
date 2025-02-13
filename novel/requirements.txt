@@ -3,4 +3,3 @@ fastapi
 uvicorn
 curl_cffi
 apscheduler
-pyTelegramBotAPI

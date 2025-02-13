@@ -2,7 +2,6 @@ import os
 import time
 import json
 import random
-import telebot
 import asyncio
 from collections import deque
 
@@ -51,9 +50,6 @@ CACHE_PATH: str = "/cache/cache.json"
 BOOK_ID_INDEX = 0
 BOOK_TITLE_INDEX = 1
 
-bot = telebot.TeleBot(TELEBOT_TOKEN)
-last_updated_time: float = time.time()
-
 titles: dict[str, deque[str]] = dict()
 books: list[tuple[str, str]] = []
 proxies: list[tuple[str, str, str, str]] = []
@@ -61,6 +57,7 @@ proxies: list[tuple[str, str, str, str]] = []
 book_index: int = 0
 proxy_index: int = 0
 loop_index: int = 0
+last_updated_time: float = time.time()
 
 
 app = FastAPI()
@@ -137,7 +134,7 @@ async def load_proxies() -> None:
 
     except Exception as e:
         logger.error(f"Loading proxies failed with {repr(e)}")
-        bot.send_message(TELEBOT_USER_ID, f"When loading proxies: {repr(e)}")
+        await send_to_telebot(f"Loading proxies failed with {repr(e)}")
         return
 
     global proxies
@@ -199,6 +196,18 @@ def load_titles() -> None:
     logger.info(f"Cache loaded for titles")
 
 
+async def send_to_telebot(message: str):
+    url = f"https://api.telegram.org/bot{TELEBOT_TOKEN}/sendMessage"
+    payload = {"chat_id": TELEBOT_USER_ID, "text": message}
+
+    try:
+        async with AsyncSession() as session:
+            await session.post(url, json=payload)
+
+    except Exception as e:
+        logger.error(f"Error occurred when sending message to telegram: {repr(e)}")
+
+
 async def get_url_html(url, proxy=None) -> str | None:
     try:
         async with AsyncSession() as session:
@@ -245,7 +254,7 @@ def successful_fetch() -> None:
     logger.debug(f"Book fetched successfully for {books[book_index][BOOK_TITLE_INDEX]}")
 
 
-def failed_fetch(e: Exception) -> None:
+async def failed_fetch(e: Exception) -> None:
     global loop_index
     global proxy_index
 
@@ -255,9 +264,7 @@ def failed_fetch(e: Exception) -> None:
 
     if loop_index == len(proxies):
         save_titles()
-        bot.send_message(
-            TELEBOT_USER_ID, f"Novel monitor terminating from error {repr(e)}"
-        )
+        await send_to_telebot(f"Novel monitor terminating from error {repr(e)}")
         logging.critical("Program terminated with all titles saved")
         raise SystemExit(0)
 
@@ -283,8 +290,7 @@ async def update_book() -> None:
                 return
 
             if titles[books[book_index][BOOK_TITLE_INDEX]]:
-                bot.send_message(
-                    TELEBOT_USER_ID,
+                await send_to_telebot(
                     f"{books[book_index][BOOK_TITLE_INDEX]}\n'{titles[books[book_index][BOOK_TITLE_INDEX]][-1]}'\n->'{title}'\n{url}",
                 )
 
@@ -299,7 +305,7 @@ async def update_book() -> None:
         logger.error(
             f"Error occurred during iteration {loop_index} on line {e.__traceback__.tb_lineno}"
         )
-        failed_fetch(e)
+        await failed_fetch(e)
 
 
 def save_titles() -> None:
