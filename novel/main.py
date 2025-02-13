@@ -98,6 +98,18 @@ async def update_endpoint() -> JSONResponse:
     return JSONResponse(content=payload, headers=NO_CACHE_HEADER)
 
 
+async def send_to_telebot(message: str):
+    url = f"https://api.telegram.org/bot{TELEBOT_TOKEN}/sendMessage"
+    payload = {"chat_id": TELEBOT_USER_ID, "text": message}
+
+    try:
+        async with AsyncSession() as session:
+            await session.post(url, json=payload)
+
+    except Exception as e:
+        logger.error(f"Error occurred when sending message to telegram: {repr(e)}")
+
+
 def load_unavailable_ips() -> list[str]:
     if not os.path.exists(IP_PATH):
         return []
@@ -194,18 +206,6 @@ def load_titles() -> None:
     titles = result
 
     logger.info(f"Cache loaded for titles")
-
-
-async def send_to_telebot(message: str):
-    url = f"https://api.telegram.org/bot{TELEBOT_TOKEN}/sendMessage"
-    payload = {"chat_id": TELEBOT_USER_ID, "text": message}
-
-    try:
-        async with AsyncSession() as session:
-            await session.post(url, json=payload)
-
-    except Exception as e:
-        logger.error(f"Error occurred when sending message to telegram: {repr(e)}")
 
 
 async def get_url_html(url, proxy=None) -> str | None:
