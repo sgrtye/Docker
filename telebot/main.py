@@ -5,7 +5,7 @@ import asyncio
 
 import httpx
 from telegram import Update, BotCommand
-from telegram.ext import Application, CommandHandler, CallbackContext
+from telegram.ext import Application, ContextTypes, CommandHandler
 
 import logging
 
@@ -32,8 +32,6 @@ if (
 ):
     logger.critical("Environment variables not fulfilled")
     raise SystemExit(0)
-
-app = Application.builder().token(TELEBOT_TOKEN).build()
 
 
 def markdown_v2_encode(reply) -> str:
@@ -131,7 +129,9 @@ def is_authorized(update: Update) -> bool:
     return str(update.effective_user.id) == TELEBOT_USER_ID
 
 
-async def handle_info_command(update: Update, context: CallbackContext) -> None:
+async def handle_info_command(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     if not is_authorized(update):
         await update.message.reply_text("?????????????????????????")
         return
@@ -141,7 +141,9 @@ async def handle_info_command(update: Update, context: CallbackContext) -> None:
     )
 
 
-async def handle_novel_command(update: Update, context: CallbackContext) -> None:
+async def handle_novel_command(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     if not is_authorized(update):
         await update.message.reply_text("?????????????????????????")
         return
@@ -149,7 +151,9 @@ async def handle_novel_command(update: Update, context: CallbackContext) -> None
     await update.message.reply_text(default_encode(await novel_update()))
 
 
-async def handle_restore_command(update: Update, context: CallbackContext) -> None:
+async def handle_restore_command(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     if not is_authorized(update):
         await update.message.reply_text("?????????????????????????")
         return
@@ -159,24 +163,32 @@ async def handle_restore_command(update: Update, context: CallbackContext) -> No
     )
 
 
-async def main() -> None:
-    # Booting up all containers that were not turned off manually
-    restore()
-
-    app.add_handler(CommandHandler("info", handle_info_command))
-    app.add_handler(CommandHandler("novel", handle_novel_command))
-    app.add_handler(CommandHandler("restore", handle_restore_command))
-
+def set_commands(app: Application) -> None:
     commands: list[BotCommand] = [
         BotCommand("info", "Get server usage status"),
         BotCommand("novel", "Get novel latest chapters"),
         BotCommand("restore", "Restart all exited containers"),
     ]
 
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(app.bot.set_my_commands(commands))
+
+
+def main() -> None:
+    # Booting up all containers that were not turned off manually
+    restore()
+
+    app = Application.builder().token(TELEBOT_TOKEN).build()
+    app.add_handler(CommandHandler("info", handle_info_command))
+    app.add_handler(CommandHandler("novel", handle_novel_command))
+    app.add_handler(CommandHandler("restore", handle_restore_command))
+
+    set_commands(app)
+
     logger.info("Telegram bot started")
-    await app.bot.set_my_commands(commands)
-    await app.run_polling()
+    app.run_polling()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
