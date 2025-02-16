@@ -29,10 +29,10 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.propagate = False
 
-BOOK_URL: str | None = os.environ.get("BOOK_URL")
-PROXY_URL: str | None = os.environ.get("PROXY_URL")
-TELEBOT_TOKEN: str | None = os.environ.get("TELEBOT_TOKEN")
-TELEBOT_USER_ID: str | None = os.environ.get("TELEBOT_USER_ID")
+BOOK_URL: str | None = os.getenv("BOOK_URL")
+PROXY_URL: str | None = os.getenv("PROXY_URL")
+TELEBOT_TOKEN: str | None = os.getenv("TELEBOT_TOKEN")
+TELEBOT_USER_ID: str | None = os.getenv("TELEBOT_USER_ID")
 
 if (
     TELEBOT_TOKEN is None

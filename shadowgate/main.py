@@ -26,12 +26,12 @@ from xui import *
 from mitce import *
 from subscription import *
 
-PROXY_HOST: str | None = os.environ.get("PROXY_HOST")
-PROXY_PORT: str | None = os.environ.get("PROXY_PORT")
-PROXY_PATH: str | None = os.environ.get("PROXY_PATH")
-HOST_DOMAIN: str | None = os.environ.get("HOST_DOMAIN")
-XUI_USERNAME: str | None = os.environ.get("XUI_USERNAME")
-XUI_PASSWORD: str | None = os.environ.get("XUI_PASSWORD")
+PROXY_HOST: str | None = os.getenv("PROXY_HOST")
+PROXY_PORT: str | None = os.getenv("PROXY_PORT")
+PROXY_PATH: str | None = os.getenv("PROXY_PATH")
+HOST_DOMAIN: str | None = os.getenv("HOST_DOMAIN")
+XUI_USERNAME: str | None = os.getenv("XUI_USERNAME")
+XUI_PASSWORD: str | None = os.getenv("XUI_PASSWORD")
 
 if HOST_DOMAIN is None:
     logger.critical("HOST_DOMAIN not provided")

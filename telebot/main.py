@@ -19,10 +19,10 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.propagate = False
 
-NOVEL_URL: str | None = os.environ.get("NOVEL_URL")
-GLANCES_URL: str | None = os.environ.get("GLANCES_URL")
-TELEBOT_TOKEN: str | None = os.environ.get("TELEBOT_TOKEN")
-TELEBOT_USER_ID: str | None = os.environ.get("TELEBOT_USER_ID")
+NOVEL_URL: str | None = os.getenv("NOVEL_URL")
+GLANCES_URL: str | None = os.getenv("GLANCES_URL")
+TELEBOT_TOKEN: str | None = os.getenv("TELEBOT_TOKEN")
+TELEBOT_USER_ID: str | None = os.getenv("TELEBOT_USER_ID")
 
 if (
     NOVEL_URL is None

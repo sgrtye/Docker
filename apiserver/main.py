@@ -29,9 +29,9 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.propagate = False
 
-XUI_URL: str | None = os.environ.get("XUI_URL")
-XUI_USERNAME: str | None = os.environ.get("XUI_USERNAME")
-XUI_PASSWORD: str | None = os.environ.get("XUI_PASSWORD")
+XUI_URL: str | None = os.getenv("XUI_URL")
+XUI_USERNAME: str | None = os.getenv("XUI_USERNAME")
+XUI_PASSWORD: str | None = os.getenv("XUI_PASSWORD")
 
 if XUI_URL is None or XUI_USERNAME is None or XUI_PASSWORD is None:
     logger.critical("Environment variables not fulfilled")
