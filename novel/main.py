@@ -265,8 +265,8 @@ async def failed_fetch(e: Exception) -> None:
     if loop_index == len(proxies):
         save_titles()
         await send_to_telebot(f"Novel monitor terminating from error {repr(e)}")
-        logging.critical("Program terminated with all titles saved")
-        raise SystemExit(0)
+        logger.critical("Program terminated with all titles saved")
+        raise e
 
 
 async def update_book() -> None:
