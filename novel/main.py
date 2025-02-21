@@ -42,7 +42,7 @@ IP_PATH: str = "/config/ip.txt"
 BOOK_PATH: str = "/config/book.txt"
 CACHE_PATH: str = "/cache/cache.json"
 
-BOOK_TITLE_INDEX = 0
+BOOK_NAME_INDEX = 0
 BOOK_URL_INDEX = 1
 
 titles: dict[str, deque[str]] = dict()
@@ -189,8 +189,10 @@ def load_titles() -> None:
         with open(CACHE_PATH, "r") as file:
             cache = json.load(file)
 
+        book_names: list[str] = [book[BOOK_NAME_INDEX] for book in books]
+
         for name, title_list in cache.items():
-            if name in books:
+            if name in book_names:
                 result[name] = deque(title_list, maxlen=5)
 
         for name, _ in books:
@@ -198,7 +200,9 @@ def load_titles() -> None:
                 result[name] = deque(maxlen=5)
 
     except Exception as e:
-        logger.error(f"Loading titles failed with {repr(e)}")
+        logger.error(
+            f"Loading titles failed with {repr(e)}, defaulting to empty title list"
+        )
         result = {name: deque(maxlen=5) for name, _ in books}
 
     global titles
@@ -250,7 +254,7 @@ def successful_fetch() -> None:
     proxy_index = (proxy_index + 1) % len(proxies)
     last_updated_time = time.time()
 
-    logger.debug(f"Book fetched successfully for {books[book_index][BOOK_TITLE_INDEX]}")
+    logger.debug(f"Book fetched successfully for {books[book_index][BOOK_NAME_INDEX]}")
 
 
 async def failed_fetch(e: Exception) -> None:
@@ -259,7 +263,7 @@ async def failed_fetch(e: Exception) -> None:
 
     loop_index += 1
     proxy_index = (proxy_index + 1) % len(proxies)
-    logger.debug(f"Failed to fetch for {books[book_index][BOOK_TITLE_INDEX]}")
+    logger.debug(f"Failed to fetch for {books[book_index][BOOK_NAME_INDEX]}")
 
     if loop_index == len(proxies):
         save_titles()
@@ -270,7 +274,7 @@ async def failed_fetch(e: Exception) -> None:
 
 async def update_book() -> None:
     try:
-        logger.debug(f"Try to fetch updates for {books[book_index][BOOK_TITLE_INDEX]}")
+        logger.debug(f"Try to fetch updates for {books[book_index][BOOK_NAME_INDEX]}")
 
         ip, port, username, password = proxies[proxy_index]
         proxy: dict[str, str] = {
@@ -282,24 +286,24 @@ async def update_book() -> None:
         html = await get_url_html(url, proxy)
         title = extract_book_title(html)
 
-        if title not in titles[books[book_index][BOOK_TITLE_INDEX]]:
+        if title not in titles[books[book_index][BOOK_NAME_INDEX]]:
             verified_title = extract_book_title(await get_url_html(url))
             if verified_title is not None and title != verified_title:
                 successful_fetch()
                 return
 
-            if titles[books[book_index][BOOK_TITLE_INDEX]]:
+            if titles[books[book_index][BOOK_NAME_INDEX]]:
                 await send_to_telebot(
-                    f"{books[book_index][BOOK_TITLE_INDEX]}\n'{titles[books[book_index][BOOK_TITLE_INDEX]][-1]}'\n->'{title}'\n{url}",
+                    f"{books[book_index][BOOK_NAME_INDEX]}\n'{titles[books[book_index][BOOK_NAME_INDEX]][-1]}'\n->'{title}'\n{url}",
                 )
 
-            titles[books[book_index][BOOK_TITLE_INDEX]].append(title)
+            titles[books[book_index][BOOK_NAME_INDEX]].append(title)
 
         successful_fetch()
 
     except Exception as e:
         logger.error(
-            f"Error {repr(e)} occurred when checking {books[book_index][BOOK_TITLE_INDEX]} with proxy {ip}:{port}"
+            f"Error {repr(e)} occurred when checking {books[book_index][BOOK_NAME_INDEX]} with proxy {ip}:{port}"
         )
         logger.error(
             f"Error occurred during iteration {loop_index} on line {e.__traceback__.tb_lineno}"
