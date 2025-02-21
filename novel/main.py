@@ -16,6 +16,7 @@ from uvicorn import Config, Server
 from fastapi.responses import JSONResponse
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.events import JobEvent, EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 
 import logging
 
@@ -164,7 +165,7 @@ def load_books() -> None:
             if line.startswith("//"):
                 continue
 
-            name, link = line.strip().split(":")
+            name, link = line.strip().split("@")
             result.append((name, link))
 
     except Exception as e:
@@ -263,7 +264,7 @@ async def failed_fetch(e: Exception) -> None:
     if loop_index == len(proxies):
         save_titles()
         await send_to_telebot(f"Novel monitor terminating from error {repr(e)}")
-        logger.critical("Program terminated with all titles saved")
+        logger.critical(f"Program terminating from error {repr(e)}")
         raise e
 
 
@@ -312,15 +313,24 @@ def save_titles() -> None:
         json.dump(content, file)
 
 
+async def start_api_server() -> None:
+    config = Config(app=app, host="0.0.0.0", port=80, log_level="critical")
+    await Server(config).serve()
+
+
 def handle_termination_signal() -> None:
     save_titles()
     logger.info("Title saved before exiting")
     raise SystemExit(0)
 
 
-async def start_api_server() -> None:
-    config = Config(app=app, host="0.0.0.0", port=80, log_level="critical")
-    await Server(config).serve()
+def job_listener(event: JobEvent) -> None:
+    if event.exception:
+        logger.error(f"Job raised an exception: {event.exception}")
+        asyncio.get_running_loop().stop()
+        handle_termination_signal()
+    else:
+        logger.debug("Job executed successfully")
 
 
 def schedule_tasks() -> None:
@@ -345,6 +355,8 @@ def schedule_tasks() -> None:
         hour=20,
         minute=48,
     )
+
+    scheduler.add_listener(job_listener, EVENT_JOB_ERROR | EVENT_JOB_EXECUTED)
 
     scheduler.start()
 
