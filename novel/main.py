@@ -29,17 +29,11 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.propagate = False
 
-BOOK_URL: str | None = os.getenv("BOOK_URL")
 PROXY_URL: str | None = os.getenv("PROXY_URL")
 TELEBOT_TOKEN: str | None = os.getenv("TELEBOT_TOKEN")
 TELEBOT_USER_ID: str | None = os.getenv("TELEBOT_USER_ID")
 
-if (
-    TELEBOT_TOKEN is None
-    or TELEBOT_USER_ID is None
-    or BOOK_URL is None
-    or PROXY_URL is None
-):
+if PROXY_URL is None or TELEBOT_TOKEN is None or TELEBOT_USER_ID is None:
     logger.critical("Environment variables not fulfilled")
     raise SystemExit(0)
 
@@ -47,8 +41,8 @@ IP_PATH: str = "/config/ip.txt"
 BOOK_PATH: str = "/config/book.txt"
 CACHE_PATH: str = "/cache/cache.json"
 
-BOOK_ID_INDEX = 0
-BOOK_TITLE_INDEX = 1
+BOOK_TITLE_INDEX = 0
+BOOK_URL_INDEX = 1
 
 titles: dict[str, deque[str]] = dict()
 books: list[tuple[str, str]] = []
@@ -91,9 +85,9 @@ async def update_endpoint() -> JSONResponse:
     payload = {
         name: (
             titles[name][-1] if titles[name] else "Unknown",
-            BOOK_URL.replace("BOOK_ID", id),
+            link,
         )
-        for id, name in books
+        for name, link in books
     }
     return JSONResponse(content=payload, headers=NO_CACHE_HEADER)
 
@@ -170,8 +164,8 @@ def load_books() -> None:
             if line.startswith("//"):
                 continue
 
-            number, name = line.strip().split(":")
-            result.append((number, name))
+            name, link = line.strip().split(":")
+            result.append((name, link))
 
     except Exception as e:
         logger.critical(f"Loading books failed with {repr(e)}")
@@ -189,18 +183,22 @@ def load_titles() -> None:
         return
 
     try:
-        result = {name: deque(maxlen=5) for _, name in books}
+        result = dict()
 
         with open(CACHE_PATH, "r") as file:
             cache = json.load(file)
 
-        for k, v in cache.items():
-            if k in result:
-                result[k].extend(v)
+        for name, title_list in cache.items():
+            if name in books:
+                result[name] = deque(title_list, maxlen=5)
+
+        for name, _ in books:
+            if name not in result:
+                result[name] = deque(maxlen=5)
 
     except Exception as e:
         logger.error(f"Loading titles failed with {repr(e)}")
-        result = {name: deque(maxlen=5) for _, name in books}
+        result = {name: deque(maxlen=5) for name, _ in books}
 
     global titles
     titles = result
@@ -279,7 +277,7 @@ async def update_book() -> None:
             "https": f"http://{username}:{password}@{ip}:{port}",
         }
 
-        url = BOOK_URL.replace("BOOK_ID", books[book_index][BOOK_ID_INDEX])
+        url = books[book_index][BOOK_URL_INDEX]
         html = await get_url_html(url, proxy)
         title = extract_book_title(html)
 
