@@ -78,7 +78,8 @@ async def container_usage() -> list[str]:
 
     total_memory_usage_mb: float = total_memory_usage / (1024 * 1024)
 
-    reply.append(f"\nDocker CPU Usage: {total_cpu_usage:.2f} %")
+    reply.append("")
+    reply.append(f"Docker CPU Usage: {total_cpu_usage:.2f} %")
     reply.append(f"Docker Memory Usage: {total_memory_usage_mb:.2f} MB")
 
     return reply
@@ -96,8 +97,8 @@ async def novel_update() -> list[str]:
     content: str = response.content.decode("utf-8")
     data_dict: dict[str, list[str, str]] = json.loads(content)
 
-    for novel, (title, url) in data_dict.items():
-        reply.append(f"{novel}: \n{title[:15]}\n{url}")
+    for name, (title, url) in data_dict.items():
+        reply.append(f"{name}:\n{title[:15]}\n{url}")
 
     return reply
 
@@ -120,7 +121,7 @@ def restore() -> list[str]:
         reply.append(f"Restarting container: {container.name}")
 
     if not reply:
-        reply.append("All containers are running")
+        reply.append("No exited containers to restart")
 
     return reply
 
@@ -129,15 +130,24 @@ def is_authorized(update: Update) -> bool:
     return str(update.effective_user.id) == TELEBOT_USER_ID
 
 
+async def unauthorized_response(update: Update) -> None:
+    await update.message.reply_text(
+        "?????????????????????????",
+        reply_to_message_id=update.message.message_id,
+    )
+
+
 async def handle_info_command(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
     if not is_authorized(update):
-        await update.message.reply_text("?????????????????????????")
+        await unauthorized_response(update)
         return
 
     await update.message.reply_text(
-        markdown_v2_encode(await container_usage()), parse_mode="MarkdownV2"
+        markdown_v2_encode(await container_usage()),
+        parse_mode="MarkdownV2",
+        reply_to_message_id=update.message.message_id,
     )
 
 
@@ -145,21 +155,25 @@ async def handle_novel_command(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
     if not is_authorized(update):
-        await update.message.reply_text("?????????????????????????")
+        await unauthorized_response(update)
         return
 
-    await update.message.reply_text(default_encode(await novel_update()))
+    await update.message.reply_text(
+        default_encode(await novel_update()),
+        reply_to_message_id=update.message.message_id,
+    )
 
 
 async def handle_restore_command(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
     if not is_authorized(update):
-        await update.message.reply_text("?????????????????????????")
+        await unauthorized_response(update)
         return
 
     await update.message.reply_text(
-        markdown_v2_encode(restore()), parse_mode="MarkdownV2"
+        default_encode(restore()),
+        reply_to_message_id=update.message.message_id,
     )
 
 
