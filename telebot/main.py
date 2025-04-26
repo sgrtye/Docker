@@ -1,7 +1,9 @@
 import os
 import json
-import docker
 import asyncio
+
+import docker
+from docker.models.containers import Container
 
 import httpx
 from telegram import Update, BotCommand
@@ -105,12 +107,12 @@ async def novel_update() -> list[str]:
 
 def restore() -> list[str]:
     client = docker.DockerClient("unix:///var/run/docker.sock")
-    containers: list[docker.models.containers.Container] = client.containers.list(
+    exited_containers: list[Container] = client.containers.list(
         all=True, filters={"status": "exited"}
     )
-    exited_containers: list = [
+    exited_containers: list[Container] = [
         container
-        for container in containers
+        for container in exited_containers
         if container.attrs["HostConfig"]["RestartPolicy"]["Name"] != "unless-stopped"
     ]
 
