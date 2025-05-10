@@ -97,10 +97,10 @@ async def novel_update() -> list[str]:
     reply: list[str] = []
 
     content: str = response.content.decode("utf-8")
-    data_dict: dict[str, list[str, str]] = json.loads(content)
+    data_dict: dict[str, list[str]] = json.loads(content)
 
-    for name, (title, url) in data_dict.items():
-        reply.append(f"{name}:\n{title[:15]}\n{url}")
+    for name, (title, date, link) in data_dict.items():
+        reply.append(f"{name}:\nLast updated at {date}\n{title[:15]}\n{link}")
 
     return reply
 

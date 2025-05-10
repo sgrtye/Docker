@@ -3,6 +3,7 @@ import time
 import json
 import random
 import asyncio
+from datetime import datetime
 from collections import deque
 
 import signal
@@ -45,7 +46,7 @@ CACHE_PATH: str = "/cache/cache.json"
 BOOK_NAME_INDEX = 0
 BOOK_URL_INDEX = 1
 
-titles: dict[str, deque[str]] = dict()
+titles: dict[str, deque[tuple[str, str]]] = dict()  # {book_name: deque[title, date])}
 books: list[tuple[str, str]] = []
 proxies: list[tuple[str, str, str, str]] = []
 
@@ -85,7 +86,8 @@ async def health_endpoint() -> JSONResponse:
 async def update_endpoint() -> JSONResponse:
     payload = {
         name: (
-            titles[name][-1] if titles[name] else "Unknown",
+            titles[name][-1][0] if titles[name] else "Unknown",
+            titles[name][-1][1] if titles[name] else "Someday",
             link,
         )
         for name, link in books
@@ -187,13 +189,13 @@ def load_titles() -> None:
         result = dict()
 
         with open(CACHE_PATH, "r") as file:
-            cache = json.load(file)
+            cache: dict[str, list[list[str]]] = json.load(file)
 
         book_names: list[str] = [book[BOOK_NAME_INDEX] for book in books]
 
-        for name, title_list in cache.items():
+        for name, info_list in cache.items():
             if name in book_names:
-                result[name] = deque(title_list, maxlen=5)
+                result[name] = deque([tuple(info) for info in info_list], maxlen=5)
 
         for name, _ in books:
             if name not in result:
@@ -286,7 +288,10 @@ async def update_book() -> None:
         html = await get_url_html(url, proxy)
         title = extract_book_title(html)
 
-        if title not in titles[books[book_index][BOOK_NAME_INDEX]]:
+        if title is None:
+            raise Exception("Should never happen with a valid proxy")
+
+        if not any(t == title for t, _ in titles[books[book_index][BOOK_NAME_INDEX]]):
             verified_title = extract_book_title(await get_url_html(url))
             if verified_title is not None and title != verified_title:
                 successful_fetch()
@@ -294,10 +299,12 @@ async def update_book() -> None:
 
             if titles[books[book_index][BOOK_NAME_INDEX]]:
                 await send_to_telebot(
-                    f"{books[book_index][BOOK_NAME_INDEX]}\n'{titles[books[book_index][BOOK_NAME_INDEX]][-1]}'\n->'{title}'\n{url}",
+                    f"{books[book_index][BOOK_NAME_INDEX]}\n'{titles[books[book_index][BOOK_NAME_INDEX]][-1][0]}'\n->'{title}'\n{url}",
                 )
 
-            titles[books[book_index][BOOK_NAME_INDEX]].append(title)
+            titles[books[book_index][BOOK_NAME_INDEX]].append(
+                (title, datetime.today().date().isoformat())
+            )
 
         successful_fetch()
 
@@ -306,14 +313,14 @@ async def update_book() -> None:
             f"Error {repr(e)} occurred when checking {books[book_index][BOOK_NAME_INDEX]} with proxy {ip}:{port}"
         )
         logger.error(
-            f"Error occurred during iteration {loop_index} on line {e.__traceback__.tb_lineno}"
+            f"Error occurred during iteration {loop_index} on line {e.__traceback__.tb_lineno if e.__traceback__ is not None else "Unknown"}"
         )
         await failed_fetch(e)
 
 
 def save_titles() -> None:
     with open(CACHE_PATH, "w") as file:
-        content = {k: list(v) for k, v in titles.items()}
+        content = {k: list(map(list, v)) for k, v in titles.items()}
         json.dump(content, file)
 
 
