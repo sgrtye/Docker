@@ -1,6 +1,8 @@
 import os
+import re
 import json
 import asyncio
+from datetime import datetime
 
 import docker
 from docker.models.containers import Container
@@ -99,8 +101,12 @@ async def novel_update() -> list[str]:
     content: str = response.content.decode("utf-8")
     data_dict: dict[str, list[str]] = json.loads(content)
 
-    for name, (title, date, link) in data_dict.items():
-        reply.append(f"{name}:\nLast updated at {date}\n{title[:15]}\n{link}")
+    for name, (title, time, link) in data_dict.items():
+        title_match = re.search(r'[^\-－—–,:()\[\]，：（）【】]+', name)
+        name = title_match.group(0) if title_match else name
+        time = datetime.fromisoformat(time)
+        time = time.strftime("%b") + f"-{time.day}"
+        reply.append(f"{name} ({time}):\n{title[:15]}\n{link}")
 
     return reply
 

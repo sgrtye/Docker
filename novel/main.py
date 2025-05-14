@@ -303,7 +303,7 @@ async def update_book() -> None:
                 )
 
             titles[books[book_index][BOOK_NAME_INDEX]].append(
-                (title, datetime.today().date().isoformat())
+                (title, datetime.now().isoformat())
             )
 
         successful_fetch()
