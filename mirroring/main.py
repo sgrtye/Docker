@@ -2,31 +2,18 @@ import json
 import os
 import subprocess
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum, auto
-
-import docker
 
 event_name: str | None = os.getenv("GITHUB_EVENT_NAME")
 github_step_summary: str | None = os.getenv("GITHUB_STEP_SUMMARY")
-tencent_registry_address: str | None = os.getenv("TENCENT_REGISTRY_ADDRESS")
-tencent_registry_namespace: str | None = os.getenv("TENCENT_REGISTRY_NAME_SPACE")
 
-if (
-    event_name is None
-    or github_step_summary is None
-    or tencent_registry_address is None
-    or tencent_registry_namespace is None
-):
+if event_name is None or github_step_summary is None:
     print("Error: Missing one or more required secrets. Exiting.")
     raise SystemExit(1)
 else:
     SCHEDULED: bool = event_name == "schedule"
     GITHUB_STEP_SUMMARY: str = github_step_summary
-    TENCENT_REGISTRY_ADDRESS: str = tencent_registry_address
-    TENCENT_REGISTRY_NAMESPACE: str = tencent_registry_namespace
-
-PLATFORMS: dict[str, str] = {"linux/arm64": "arm64", "linux/amd64": "amd64"}
+    PLATFORMS: dict[str, str] = {"linux/arm64": "arm64", "linux/amd64": "amd64"}
 
 
 class Status(Enum):
@@ -47,27 +34,55 @@ class Image:
 
 
 def load_images_from_file() -> list[Image]:
-    today_weekday: int = datetime.now().weekday()
-
     images: list[Image] = []
 
     with open("mirroring/images.txt", "r") as file:
         for i, line in enumerate(file):
-            if line and (not SCHEDULED or i % 7 == today_weekday):
+            if line:
                 parts: list[str] = line.split()
-                assert len(parts) == 4
+                assert len(parts) == 5
 
                 images.append(
                     Image(
-                        name=parts[2],
-                        original_identifier=parts[0],
-                        original_tag=parts[1],
-                        target_identifier=f"{TENCENT_REGISTRY_ADDRESS}/{TENCENT_REGISTRY_NAMESPACE}/{parts[2]}",
-                        target_tag=parts[3],
+                        name=parts[0],
+                        original_identifier=parts[1],
+                        original_tag=parts[2],
+                        target_identifier=parts[3],
+                        target_tag=parts[4],
                     )
                 )
 
+    print(f"images: {[image.name for image in images]} to be processed")
     return images
+
+
+def get_image_digest(manifests: list[dict] | dict, platform: str) -> str | None:
+    if not manifests:
+        return None
+
+    if isinstance(manifests, dict):
+        manifests = [manifests]
+
+    for manifest in manifests:
+        if (
+            not f"{manifest['Descriptor']['platform']['os']}/{manifest['Descriptor']['platform']['architecture']}"
+            == platform
+        ):
+            continue
+
+        match manifest["Descriptor"]["mediaType"]:
+            case "application/vnd.docker.distribution.manifest.v1+json":
+                return manifest["SchemaV1Manifest"]["config"]["digest"]
+            case "application/vnd.docker.distribution.manifest.v2+json":
+                return manifest["SchemaV2Manifest"]["config"]["digest"]
+            case "application/vnd.docker.distribution.manifest.list.v2+json":
+                return manifest["ManifestList"]["config"]["digest"]
+            case "application/vnd.oci.image.manifest.v1+json":
+                return manifest["OCIManifest"]["config"]["digest"]
+            case "application/vnd.oci.image.index.v1+json":
+                return manifest["OCIIndex"]["config"]["digest"]
+
+    return None
 
 
 def check_image_status(image: Image) -> dict[str, Status]:
@@ -77,6 +92,7 @@ def check_image_status(image: Image) -> dict[str, Status]:
             "manifest",
             "inspect",
             f"{image.original_identifier}:{image.original_tag}",
+            "--verbose",
         ],
         capture_output=True,
         text=True,
@@ -85,7 +101,7 @@ def check_image_status(image: Image) -> dict[str, Status]:
     if original_manifest.returncode != 0:
         return dict.fromkeys(PLATFORMS.keys(), Status.NOT_SUPPORTED)
 
-    original_manifest_dict = json.loads(original_manifest.stdout)
+    original_manifest_parsed = json.loads(original_manifest.stdout)
 
     target_manifest = subprocess.run(
         [
@@ -93,40 +109,27 @@ def check_image_status(image: Image) -> dict[str, Status]:
             "manifest",
             "inspect",
             f"{image.target_identifier}:{image.target_tag}",
+            "--verbose",
         ],
         capture_output=True,
         text=True,
     )
 
-    if target_manifest.returncode != 0:
-        return dict.fromkeys(PLATFORMS.keys(), Status.NEW)
-
-    target_manifest_dict = json.loads(target_manifest.stdout)
+    if target_manifest.returncode != 0 or not SCHEDULED:
+        target_manifest_parsed = []
+    else:
+        target_manifest_parsed = json.loads(target_manifest.stdout)
 
     status: dict[str, Status] = dict()
     for platform in PLATFORMS.keys():
-        original_platform = next(
-            (
-                p
-                for p in original_manifest_dict["manifests"]
-                if f"{p['platform']['os']}/{p['platform']['architecture']}" == platform
-            ),
-            None,
-        )
-        target_platform = next(
-            (
-                p
-                for p in target_manifest_dict["manifests"]
-                if f"{p['platform']['os']}/{p['platform']['architecture']}" == platform
-            ),
-            None,
-        )
+        original_platform = get_image_digest(original_manifest_parsed, platform)
+        target_platform = get_image_digest(target_manifest_parsed, platform)
 
         if original_platform is None:
             status[platform] = Status.NOT_SUPPORTED
         elif target_platform is None:
             status[platform] = Status.NEW
-        elif original_platform["digest"] != target_platform["digest"]:
+        elif original_platform != target_platform:
             status[platform] = Status.OUTDATED
         else:
             status[platform] = Status.UP_TO_DATE
@@ -134,27 +137,58 @@ def check_image_status(image: Image) -> dict[str, Status]:
     return status
 
 
-def download_and_push_image(
-    client: docker.DockerClient, image: Image, platform: str
-) -> None:
+def download_and_push_image(image: Image, platform: str) -> None:
     print(
         f"Mirroring {image.name}:{image.original_tag} to {image.target_identifier}:{image.target_tag} for {platform}"
     )
 
-    client.images.pull(
-        image.original_identifier,
-        tag=image.original_tag,
-        platform=platform,
+    subprocess.run(
+        [
+            "docker",
+            "pull",
+            f"{image.original_identifier}:{image.original_tag}",
+            "--platform",
+            platform,
+        ],
+        capture_output=True,
+        text=True,
     )
 
-    pulled_image = client.images.get(
-        f"{image.original_identifier}:{image.original_tag}"
+    print("Image pulled successfully")
+
+    subprocess.run(
+        [
+            "docker",
+            "tag",
+            f"{image.original_identifier}:{image.original_tag}",
+            f"{image.target_identifier}:{PLATFORMS[platform]}",
+        ],
+        capture_output=True,
+        text=True,
     )
-    pulled_image.tag(image.target_identifier, tag=PLATFORMS[platform])
 
-    client.images.push(f"{image.target_identifier}:{PLATFORMS[platform]}")
+    subprocess.run(
+        [
+            "docker",
+            "push",
+            f"{image.target_identifier}:{PLATFORMS[platform]}",
+        ],
+        capture_output=True,
+        text=True,
+    )
 
-    client.images.prune()
+    print("Image pushed successfully")
+
+    subprocess.run(
+        [
+            "docker",
+            "image",
+            "prune",
+            "-af",
+        ],
+        capture_output=True,
+        text=True,
+    )
 
 
 def create_manifest(image: Image, supported_platforms: list[str]) -> bool:
@@ -165,6 +199,11 @@ def create_manifest(image: Image, supported_platforms: list[str]) -> bool:
         f"{image.target_identifier}:{PLATFORMS[platform]}"
         for platform in supported_platforms
     ]
+
+    subprocess.run(
+        ["docker", "manifest", "rm", manifest_name], capture_output=True, text=True
+    )
+
     create_cmd: list[str] = [
         "docker",
         "manifest",
@@ -193,14 +232,12 @@ def create_manifest(image: Image, supported_platforms: list[str]) -> bool:
     return True
 
 
-def image_mirror(
-    client: docker.DockerClient, image: Image, status: dict[str, Status]
-) -> bool:
+def image_mirror(image: Image, status: dict[str, Status]) -> bool:
     try:
         for platform, platform_status in status.items():
             match platform_status:
                 case Status.NEW | Status.OUTDATED:
-                    download_and_push_image(client, image, platform)
+                    download_and_push_image(image, platform)
 
         supported_platforms: list[str] = [
             platform
@@ -225,28 +262,28 @@ def create_step_summary(result: dict[Image, dict[str, Status]]) -> None:
         summary_file.write("### Docker Image Mirroring Results\n\n")
         summary_file.write("```\n")
 
-        summary_file.write(f"{'Image':^15}|{'Platform':^15}|{'Status':^15}\n")
-        summary_file.write(f"{'-' * 15}|{'-' * 15}|{'-' * 15}\n")
+        summary_file.write(f"|{'Image':^15}|{'Platform':^15}|{'Status':^15}|\n")
+        summary_file.write(f"|{'-' * 15}|{'-' * 15}|{'-' * 15}|\n")
 
         for image, status in result.items():
             for platform, platform_status in status.items():
                 summary_file.write(
-                    f"{image.name:^15}|{PLATFORMS[platform]:^15}|{platform_status.name:^15}\n"
+                    f"|{image.name:^15}|{PLATFORMS[platform]:^15}|{platform_status.name:^15}|\n"
                 )
 
-        summary_file.write(f"{'-' * 15}|{'-' * 15}|{'-' * 15}\n")
+        summary_file.write(f"|{'-' * 15}|{'-' * 15}|{'-' * 15}|\n")
         summary_file.write("```\n")
 
 
 def main() -> None:
-    client = docker.from_env()
-
     images: list[Image] = load_images_from_file()
     result: dict[Image, dict[str, Status]] = dict()
 
     for image in images:
         status = check_image_status(image)
-        pushed_successfully = image_mirror(client, image, status)
+        print(f"Status for {image.name}: {status}")
+
+        pushed_successfully = image_mirror(image, status)
 
         if pushed_successfully:
             result[image] = status

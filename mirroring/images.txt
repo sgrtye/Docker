@@ -1,4 +1,4 @@
-louislam/dockge 1 dockge latest
-alireza7/x-ui latest x-ui latest
-containrrr/watchtower latest watchtower latest
-cloudflare/cloudflared latest cloudflared latest
+dockge louislam/dockge 1 ccr.ccs.tencentyun.com/sgrtye/dockge latest
+x-ui alireza7/x-ui latest ccr.ccs.tencentyun.com/sgrtye/x-ui latest
+watchtower containrrr/watchtower latest ccr.ccs.tencentyun.com/sgrtye/watchtower latest
+cloudflared cloudflare/cloudflared latest ccr.ccs.tencentyun.com/sgrtye/cloudflared latest

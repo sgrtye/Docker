@@ -40,9 +40,7 @@ jobs:
       - name: Install all necessary packages
         run: pip install -r mirroring/requirements.txt
 
-      - name: Run Docker Image Mirroring Script
+      - name: Run Docker image mirroring script
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-          TENCENT_REGISTRY_ADDRESS: ${{ secrets.TENCENT_REGISTRY_ADDRESS }}
-          TENCENT_REGISTRY_NAME_SPACE: ${{ secrets.TENCENT_REGISTRY_NAME_SPACE }}
-        run: python mirroring/main.py
+        run: python -u mirroring/main.py
