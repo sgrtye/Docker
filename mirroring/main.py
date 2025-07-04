@@ -64,10 +64,8 @@ def get_image_digest(manifests: list[dict] | dict, platform: str) -> str | None:
         manifests = [manifests]
 
     for manifest in manifests:
-        if (
-            not f"{manifest['Descriptor']['platform']['os']}/{manifest['Descriptor']['platform']['architecture']}"
-            == platform
-        ):
+        info: dict[str, str] = manifest.get("Descriptor", {}).get("platform", {})
+        if not f"{info.get('os', '')}/{info.get('architecture', '')}" == platform:
             continue
 
         match manifest["Descriptor"]["mediaType"]:
@@ -288,6 +286,7 @@ def create_step_summary(result: dict[Image, dict[str, Status]]) -> None:
 
             row += "|\n"
             summary_file.write(row)
+            summary_file.write(separator)
 
         summary_file.write(separator)
 
