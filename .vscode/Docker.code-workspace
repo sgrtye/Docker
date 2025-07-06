@@ -19,5 +19,7 @@
 			"path": "../template"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"python.analysis.typeCheckingMode": "basic"
+	}
 }
