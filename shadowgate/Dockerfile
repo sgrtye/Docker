@@ -5,10 +5,10 @@ EXPOSE 80
 
 COPY . /app
 WORKDIR /app
-RUN uv sync --locked --system --no-dev
+RUN uv sync --locked
 
 VOLUME /logs
 VOLUME /conf
 VOLUME /website
 
-CMD ["python", "-u", "main.py"]
+CMD ["uv", "run", "python", "-u", "main.py"]
