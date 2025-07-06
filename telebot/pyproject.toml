@@ -1,0 +1,11 @@
+[project]
+name = "telebot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "docker>=7.1.0",
+    "httpx>=0.28.1",
+    "python-telegram-bot>=22.2",
+]

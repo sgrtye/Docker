@@ -1,25 +1,21 @@
-import os
-import time
-import json
-import random
 import asyncio
-from datetime import datetime
-from collections import deque
-
-import signal
-import platform
-
-from lxml import etree
-from curl_cffi.requests import AsyncSession
-
-from fastapi import FastAPI
-from uvicorn import Config, Server
-from fastapi.responses import JSONResponse
-
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.events import JobEvent, EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
-
+import json
 import logging
+import os
+import platform
+import random
+import signal
+import time
+from collections import deque
+from datetime import datetime
+
+from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED, JobExecutionEvent
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from curl_cffi.requests import AsyncSession
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from lxml import etree
+from uvicorn import Config, Server
 
 logger = logging.getLogger("my_app")
 logger.setLevel(logging.INFO)
@@ -31,13 +27,17 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.propagate = False
 
-PROXY_URL: str | None = os.getenv("PROXY_URL")
-TELEBOT_TOKEN: str | None = os.getenv("TELEBOT_TOKEN")
-TELEBOT_USER_ID: str | None = os.getenv("TELEBOT_USER_ID")
+proxy_url: str | None = os.getenv("PROXY_URL")
+telebot_token: str | None = os.getenv("TELEBOT_TOKEN")
+telebot_user_id: str | None = os.getenv("TELEBOT_USER_ID")
 
-if PROXY_URL is None or TELEBOT_TOKEN is None or TELEBOT_USER_ID is None:
+if proxy_url is None or telebot_token is None or telebot_user_id is None:
     logger.critical("Environment variables not fulfilled")
-    raise SystemExit(0)
+    raise SystemExit(1)
+else:
+    PROXY_URL: str = proxy_url
+    TELEBOT_TOKEN: str = telebot_token
+    TELEBOT_USER_ID: str = telebot_user_id
 
 IP_PATH: str = "/config/ip.txt"
 BOOK_PATH: str = "/config/book.txt"
@@ -57,7 +57,7 @@ last_updated_time: float = time.time()
 
 
 app = FastAPI()
-NO_CACHE_HEADER = {
+NO_CACHE_HEADER: dict[str, str] = {
     "Content-Type": "application/json",
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
     "Pragma": "no-cache",
@@ -84,10 +84,10 @@ async def health_endpoint() -> JSONResponse:
 
 @app.get("/update")
 async def update_endpoint() -> JSONResponse:
-    payload = {
+    payload: dict[str, tuple[str, str, str]] = {
         name: (
             titles[name][-1][0] if titles[name] else "Unknown",
-            titles[name][-1][1] if titles[name] else "Someday",
+            titles[name][-1][1] if titles[name] else datetime(2000, 1, 1).isoformat(),
             link,
         )
         for name, link in books
@@ -95,9 +95,9 @@ async def update_endpoint() -> JSONResponse:
     return JSONResponse(content=payload, headers=NO_CACHE_HEADER)
 
 
-async def send_to_telebot(message: str):
-    url = f"https://api.telegram.org/bot{TELEBOT_TOKEN}/sendMessage"
-    payload = {"chat_id": TELEBOT_USER_ID, "text": message}
+async def send_to_telebot(message: str) -> None:
+    url: str = f"https://api.telegram.org/bot{TELEBOT_TOKEN}/sendMessage"
+    payload: dict[str, str] = {"chat_id": TELEBOT_USER_ID, "text": message}
 
     try:
         async with AsyncSession() as session:
@@ -111,7 +111,7 @@ def load_unavailable_ips() -> list[str]:
     if not os.path.exists(IP_PATH):
         return []
 
-    unavailable_ips = []
+    unavailable_ips: list[str] = []
 
     with open(IP_PATH, "r") as file:
         lines = file.readlines()
@@ -124,7 +124,7 @@ def load_unavailable_ips() -> list[str]:
 
 async def load_proxies() -> None:
     try:
-        result = []
+        result: list[tuple[str, str, str, str]] = []
         async with AsyncSession() as session:
             response = await session.get(PROXY_URL)
 
@@ -158,7 +158,7 @@ def load_books() -> None:
         raise SystemExit(0)
 
     try:
-        result = []
+        result: list[tuple[str, str]] = []
 
         with open(BOOK_PATH, "r") as file:
             lines = file.readlines()
@@ -182,11 +182,11 @@ def load_books() -> None:
 
 def load_titles() -> None:
     if not os.path.exists(CACHE_PATH):
-        logger.info(f"No cache found for titles")
+        logger.info("No cache found for titles")
         return
 
     try:
-        result = dict()
+        result: dict[str, deque[tuple[str, str]]] = dict()
 
         with open(CACHE_PATH, "r") as file:
             cache: dict[str, list[list[str]]] = json.load(file)
@@ -195,7 +195,9 @@ def load_titles() -> None:
 
         for name, info_list in cache.items():
             if name in book_names:
-                result[name] = deque([tuple(info) for info in info_list], maxlen=5)
+                result[name] = deque(
+                    [(info[0], info[1]) for info in info_list], maxlen=5
+                )
 
         for name, _ in books:
             if name not in result:
@@ -210,7 +212,7 @@ def load_titles() -> None:
     global titles
     titles = result
 
-    logger.info(f"Cache loaded for titles")
+    logger.info("Cache loaded for titles")
 
 
 async def get_url_html(url, proxy=None) -> str | None:
@@ -313,14 +315,16 @@ async def update_book() -> None:
             f"Error {repr(e)} occurred when checking {books[book_index][BOOK_NAME_INDEX]} with proxy {ip}:{port}"
         )
         logger.error(
-            f"Error occurred during iteration {loop_index} on line {e.__traceback__.tb_lineno if e.__traceback__ is not None else "Unknown"}"
+            f"Error occurred during iteration {loop_index} on line {e.__traceback__.tb_lineno if e.__traceback__ else '-1'}"
         )
         await failed_fetch(e)
 
 
 def save_titles() -> None:
     with open(CACHE_PATH, "w") as file:
-        content = {k: list(map(list, v)) for k, v in titles.items()}
+        content: dict[str, list[list[str]]] = {
+            k: list(map(list, v)) for k, v in titles.items()
+        }
         json.dump(content, file)
 
 
@@ -335,7 +339,7 @@ def handle_termination_signal() -> None:
     raise SystemExit(0)
 
 
-def job_listener(event: JobEvent) -> None:
+def job_listener(event: JobExecutionEvent) -> None:
     if event.exception:
         logger.error(f"Job raised an exception: {event.exception}")
         asyncio.get_running_loop().stop()

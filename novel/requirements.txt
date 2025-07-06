@@ -1,5 +1,0 @@
-lxml
-fastapi
-uvicorn
-curl_cffi
-apscheduler

@@ -1,5 +1,0 @@
-httpx
-uvicorn
-fastapi
-websockets
-apscheduler

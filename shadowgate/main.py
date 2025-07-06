@@ -1,4 +1,18 @@
+import asyncio
 import logging
+import os
+from functools import partial
+
+import websockets
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, WebSocket
+from fastapi.staticfiles import StaticFiles
+from httpx import AsyncClient
+from uvicorn import Config, Server
+
+from mitce import update_mitce_config
+from subscription import get_config_file
+from xui import get_inbounds, set_credentials
 
 logger = logging.getLogger("my_app")
 logger.setLevel(logging.INFO)
@@ -10,34 +24,35 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.propagate = False
 
-import os
-import asyncio
-from functools import partial
+mitce_url: str | None = os.getenv("MITCE_URL")
+proxy_host: str | None = os.getenv("PROXY_HOST")
+proxy_port: str | None = os.getenv("PROXY_PORT")
+proxy_path: str | None = os.getenv("PROXY_PATH")
+host_domain: str | None = os.getenv("HOST_DOMAIN")
+xui_username: str | None = os.getenv("XUI_USERNAME")
+xui_password: str | None = os.getenv("XUI_PASSWORD")
 
-import websockets
-from httpx import AsyncClient
-from uvicorn import Config, Server
-from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Request, Response, Depends, WebSocket, HTTPException
+if (
+    mitce_url is None
+    or proxy_host is None
+    or proxy_port is None
+    or proxy_path is None
+    or host_domain is None
+    or xui_username is None
+    or xui_password is None
+):
+    logger.critical("Environment variables not fulfilled")
+    raise SystemExit(1)
+else:
+    MITCE_URL: str = mitce_url
+    PROXY_HOST: str = proxy_host
+    PROXY_PORT: str = proxy_port
+    PROXY_PATH: str = proxy_path
+    HOST_DOMAIN: str = host_domain
+    XUI_USERNAME: str = xui_username
+    XUI_PASSWORD: str = xui_password
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-from xui import *
-from mitce import *
-from subscription import *
-
-PROXY_HOST: str | None = os.getenv("PROXY_HOST")
-PROXY_PORT: str | None = os.getenv("PROXY_PORT")
-PROXY_PATH: str | None = os.getenv("PROXY_PATH")
-HOST_DOMAIN: str | None = os.getenv("HOST_DOMAIN")
-XUI_USERNAME: str | None = os.getenv("XUI_USERNAME")
-XUI_PASSWORD: str | None = os.getenv("XUI_PASSWORD")
-
-if HOST_DOMAIN is None:
-    logger.critical("HOST_DOMAIN not provided")
-    raise SystemExit(0)
-
-REQUEST_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
+REQUEST_METHODS: list[str] = ["GET", "POST", "PUT", "DELETE", "PATCH"]
 app = FastAPI()
 client = AsyncClient()
 
@@ -50,7 +65,7 @@ def check_for_host_domain(request: Request) -> None:
 async def forward_to_dashboard(
     request: Request, tail: str, proxy_path: str
 ) -> Response:
-    target_url = f"http://{PROXY_HOST}:{PROXY_PORT}{proxy_path}/{tail}"
+    target_url: str = f"http://{PROXY_HOST}:{PROXY_PORT}{proxy_path}/{tail}"
 
     forwarded_request = client.build_request(
         method=request.method,
@@ -75,7 +90,7 @@ async def forward_to_dashboard(
 
 
 async def forward_to_proxy(websocket: WebSocket, port: str, path: str) -> None:
-    target_url = f"ws://{PROXY_HOST}:{port}{path}"
+    target_url: str = f"ws://{PROXY_HOST}:{port}{path}"
 
     await websocket.accept()
 
@@ -86,7 +101,7 @@ async def forward_to_proxy(websocket: WebSocket, port: str, path: str) -> None:
                 while True:
                     yield await websocket.receive()
 
-            async def client_to_backend():
+            async def client_to_backend() -> None:
                 try:
                     async for message in receive_messages(websocket):
                         if "text" in message:
@@ -99,10 +114,15 @@ async def forward_to_proxy(websocket: WebSocket, port: str, path: str) -> None:
                 except Exception:
                     raise
 
-            async def backend_to_client():
+            async def backend_to_client() -> None:
                 try:
                     async for message in backend_ws:
-                        await websocket.send_text(message)
+                        if isinstance(message, bytes):
+                            await websocket.send_bytes(message)
+                        elif isinstance(message, str):
+                            await websocket.send_text(message)
+                        else:
+                            await websocket.send_text(bytes(message).decode("utf-8"))
 
                 except Exception:
                     raise
@@ -131,7 +151,7 @@ async def add_api_routes() -> None:
     # Forward all requests to the proxy
     if not PROXY_PATH.startswith("/"):
         app.add_api_route(
-            path=f"/{{tail:path}}",
+            path="/{tail:path}",
             endpoint=partial(forward_to_dashboard, proxy_path=""),
             methods=REQUEST_METHODS,
         )
@@ -148,7 +168,7 @@ async def add_api_routes() -> None:
 
         #  Config files
         app.add_api_route(
-            path=f"/conf/{{tail:path}}",
+            path="/conf/{tail:path}",
             endpoint=get_config,
             dependencies=[Depends(check_for_host_domain)],
         )
@@ -167,7 +187,7 @@ def schedule_config_updates() -> None:
     scheduler = AsyncIOScheduler()
 
     scheduler.add_job(
-        update_mitce_config,
+        update_mitce_config(MITCE_URL),
         "cron",
         hour="0,8,16",
         minute="24",
@@ -182,6 +202,14 @@ async def start_api_server() -> None:
 
 
 async def main() -> None:
+    set_credentials(
+        PROXY_HOST,
+        PROXY_PORT,
+        PROXY_PATH,
+        XUI_USERNAME,
+        XUI_PASSWORD,
+    )
+
     await add_api_routes()
     schedule_config_updates()
 

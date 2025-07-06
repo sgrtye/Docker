@@ -1,14 +1,18 @@
-import os
-import httpx
 import logging
+import os
 
-from constants import *
+import httpx
 
-MITCE_URL: str | None = os.environ.get("MITCE_URL")
+from constants import (
+    MITCE_CLASH_PATH,
+    MITCE_CLASH_USERINFO_PATH,
+    MITCE_SHADOWROCKET_PATH,
+)
+
 logger = logging.getLogger("my_app")
 
 
-async def update_clash_config() -> bool:
+async def update_clash_config(MITCE_URL: str) -> bool:
     clash_response = await httpx.AsyncClient().get(
         MITCE_URL, headers={"User-agent": "clash"}
     )
@@ -29,7 +33,7 @@ async def update_clash_config() -> bool:
     return True
 
 
-async def update_shadowrocket_config() -> bool:
+async def update_shadowrocket_config(MITCE_URL: str) -> bool:
     shadowrocket_response = await httpx.AsyncClient().get(
         MITCE_URL, headers={"User-agent": "shadowrocket"}
     )
@@ -45,22 +49,15 @@ async def update_shadowrocket_config() -> bool:
     return True
 
 
-async def update_mitce_config():
-    if MITCE_URL is None:
-        logger.error("MITCE_URL not provided")
-        return
-
+async def update_mitce_config(MITCE_URL: str) -> None:
     try:
         # Get Shadowrocket config string
-        clash_result = await update_clash_config()
+        clash_result = await update_clash_config(MITCE_URL)
         # Get Clash config file
-        shadowrocket_result = await update_shadowrocket_config()
+        shadowrocket_result = await update_shadowrocket_config(MITCE_URL)
 
         if all((clash_result, shadowrocket_result)):
             logger.info("New mitce config files fetched")
 
     except Exception:
         pass
-
-
-__all__ = ["update_mitce_config"]

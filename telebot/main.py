@@ -1,17 +1,15 @@
+import asyncio
+import json
+import logging
 import os
 import re
-import json
-import asyncio
 from datetime import datetime
 
 import docker
-from docker.models.containers import Container
-
 import httpx
-from telegram import Update, BotCommand
-from telegram.ext import Application, ContextTypes, CommandHandler
-
-import logging
+from docker.models.containers import Container
+from telegram import BotCommand, Update
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 logger = logging.getLogger("my_app")
 logger.setLevel(logging.INFO)
@@ -23,28 +21,33 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.propagate = False
 
-NOVEL_URL: str | None = os.getenv("NOVEL_URL")
-GLANCES_URL: str | None = os.getenv("GLANCES_URL")
-TELEBOT_TOKEN: str | None = os.getenv("TELEBOT_TOKEN")
-TELEBOT_USER_ID: str | None = os.getenv("TELEBOT_USER_ID")
+novel_url: str | None = os.getenv("NOVEL_URL")
+glances_rul: str | None = os.getenv("GLANCES_URL")
+telebot_token: str | None = os.getenv("TELEBOT_TOKEN")
+telebot_user_id: str | None = os.getenv("TELEBOT_USER_ID")
 
 if (
-    NOVEL_URL is None
-    or GLANCES_URL is None
-    or TELEBOT_TOKEN is None
-    or TELEBOT_USER_ID is None
+    novel_url is None
+    or glances_rul is None
+    or telebot_token is None
+    or telebot_user_id is None
 ):
     logger.critical("Environment variables not fulfilled")
-    raise SystemExit(0)
+    raise SystemExit(1)
+else:
+    NOVEL_URL: str = novel_url
+    GLANCES_URL: str = glances_rul
+    TELEBOT_TOKEN: str = telebot_token
+    TELEBOT_USER_ID: str = telebot_user_id
 
 
 def markdown_v2_encode(reply) -> str:
-    text = "\n".join(reply)
+    text: str = "\n".join(reply)
     return f"```\n{text}```"
 
 
 def default_encode(reply) -> str:
-    text = "\n".join(reply)
+    text: str = "\n".join(reply)
     return text
 
 
@@ -102,7 +105,7 @@ async def novel_update() -> list[str]:
     data_dict: dict[str, list[str]] = json.loads(content)
 
     for name, (title, time, link) in data_dict.items():
-        title_match = re.search(r'[^\-－—–,:()\[\]，：（）【】]+', name)
+        title_match = re.search(r"[^\-－—–,:()\[\]，：（）【】]+", name)
         name = title_match.group(0) if title_match else name
         time = datetime.fromisoformat(time)
         time = time.strftime("%b") + f"-{time.day}"
@@ -135,14 +138,16 @@ def restore() -> list[str]:
 
 
 def is_authorized(update: Update) -> bool:
-    return str(update.effective_user.id) == TELEBOT_USER_ID
+    user = update.effective_user
+    return user is not None and str(user.id) == TELEBOT_USER_ID
 
 
 async def unauthorized_response(update: Update) -> None:
-    await update.message.reply_text(
-        "?????????????????????????",
-        reply_to_message_id=update.message.message_id,
-    )
+    if update.message is not None:
+        await update.message.reply_text(
+            "?????????????????????????",
+            reply_to_message_id=update.message.message_id,
+        )
 
 
 async def handle_info_command(
@@ -152,11 +157,12 @@ async def handle_info_command(
         await unauthorized_response(update)
         return
 
-    await update.message.reply_text(
-        markdown_v2_encode(await container_usage()),
-        parse_mode="MarkdownV2",
-        reply_to_message_id=update.message.message_id,
-    )
+    if update.message is not None:
+        await update.message.reply_text(
+            markdown_v2_encode(await container_usage()),
+            parse_mode="MarkdownV2",
+            reply_to_message_id=update.message.message_id,
+        )
 
 
 async def handle_novel_command(
@@ -166,10 +172,11 @@ async def handle_novel_command(
         await unauthorized_response(update)
         return
 
-    await update.message.reply_text(
-        default_encode(await novel_update()),
-        reply_to_message_id=update.message.message_id,
-    )
+    if update.message is not None:
+        await update.message.reply_text(
+            default_encode(await novel_update()),
+            reply_to_message_id=update.message.message_id,
+        )
 
 
 async def handle_restore_command(
@@ -179,10 +186,11 @@ async def handle_restore_command(
         await unauthorized_response(update)
         return
 
-    await update.message.reply_text(
-        default_encode(restore()),
-        reply_to_message_id=update.message.message_id,
-    )
+    if update.message is not None:
+        await update.message.reply_text(
+            default_encode(restore()),
+            reply_to_message_id=update.message.message_id,
+        )
 
 
 def set_commands(app: Application) -> None:

@@ -1,13 +1,17 @@
-import os
-
 import logging
+import os
 from logging.handlers import TimedRotatingFileHandler
 
+from fastapi import HTTPException, Request, Response
 from fastapi.responses import FileResponse
-from fastapi import Request, Response, HTTPException
 
-from xui import *
-from constants import *
+from constants import (
+    CONFIG_ACCESS_LOG_PATH,
+    MITCE_CLASH_PATH,
+    MITCE_CLASH_USERINFO_PATH,
+    MITCE_SHADOWROCKET_PATH,
+)
+from xui import get_clients
 
 logger = logging.getLogger("config_access")
 logger.setLevel(logging.INFO)
@@ -84,4 +88,3 @@ async def get_config_file(request: Request, tail: str) -> Response:
     raise HTTPException(status_code=404, detail="Not Found")
 
 
-__all__ = ["get_config_file"]

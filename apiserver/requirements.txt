@@ -1,6 +1,0 @@
-httpx
-pandas
-fastapi
-uvicorn
-yfinance
-apscheduler
