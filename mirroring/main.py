@@ -189,7 +189,21 @@ def download_and_push_image(image: Image, platform: str) -> None:
     )
 
 
-def create_manifest(image: Image, supported_platforms: list[str]) -> bool:
+def create_manifest(image: Image, statuses: dict[str, Status]) -> bool:
+    if all((status for status in statuses.values() if status == Status.UP_TO_DATE)):
+        print(f"Image {image.name} is already up to date for all platforms.")
+        return True
+
+    if all((status for status in statuses.values() if status == Status.NOT_SUPPORTED)):
+        print(f"Image {image.name} is not supported on any platform.")
+        return False
+
+    supported_platforms: list[str] = [
+        platform
+        for platform, status in statuses.items()
+        if status != Status.NOT_SUPPORTED
+    ]
+
     print(f"Creating multi-platform manifest for {image.name}")
 
     manifest_name: str = f"{image.target_identifier}:{image.target_tag}"
@@ -237,18 +251,7 @@ def image_mirror(image: Image, status: dict[str, Status]) -> bool:
                 case Status.NEW | Status.OUTDATED:
                     download_and_push_image(image, platform)
 
-        supported_platforms: list[str] = [
-            platform
-            for platform, platform_status in status.items()
-            if platform_status != Status.NOT_SUPPORTED
-        ]
-        if supported_platforms:
-            return create_manifest(image, supported_platforms)
-        else:
-            print(
-                f"No supported platforms for {image.name}, skipping manifest creation"
-            )
-            return True
+        return create_manifest(image, status)
 
     except Exception as e:
         print(f"Error mirroring {image.name}: {e}")
