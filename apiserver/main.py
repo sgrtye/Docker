@@ -1,23 +1,20 @@
-import os
-import time
+import asyncio
 import json
+import logging
 import math
+import os
+import platform
 import random
 import signal
-import platform
-
-import pandas
-import yfinance
+import time
 
 import httpx
-import asyncio
-from fastapi import FastAPI
-from uvicorn import Config, Server
-from fastapi.responses import JSONResponse
-
+import pandas
+import yfinance
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-import logging
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from uvicorn import Config, Server
 
 logger = logging.getLogger("my_app")
 logger.setLevel(logging.INFO)
@@ -29,13 +26,18 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.propagate = False
 
-XUI_URL: str | None = os.getenv("XUI_URL")
-XUI_USERNAME: str | None = os.getenv("XUI_USERNAME")
-XUI_PASSWORD: str | None = os.getenv("XUI_PASSWORD")
+xui_url: str | None = os.getenv("XUI_URL")
+xui_username: str | None = os.getenv("XUI_USERNAME")
+xui_password: str | None = os.getenv("XUI_PASSWORD")
 
-if XUI_URL is None or XUI_USERNAME is None or XUI_PASSWORD is None:
+if xui_url is None or xui_username is None or xui_password is None:
     logger.critical("Environment variables not fulfilled")
-    raise SystemExit(0)
+    raise SystemExit(1)
+else:
+    XUI_URL: str = xui_url
+    XUI_USERNAME: str = xui_username
+    XUI_PASSWORD: str = xui_password
+
 
 xui_status: dict[str, str] = dict()
 stock_status: dict[str, str] = dict()
@@ -71,7 +73,7 @@ last_updated_time: float = time.time()
 xui_rate_limit_time: float = time.time()
 
 app = FastAPI()
-NO_CACHE_HEADER = {
+NO_CACHE_HEADER: dict[str, str] = {
     "Content-Type": "application/json",
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
     "Pragma": "no-cache",
@@ -80,8 +82,8 @@ NO_CACHE_HEADER = {
 
 
 @app.get("/health")
-async def health_endpoint():
-    time_delta = time.time() - last_updated_time
+async def health_endpoint() -> JSONResponse:
+    time_delta: float = time.time() - last_updated_time
     if time_delta <= ((60 // max(len(MAPPING), 1)) + 1) * 60:
         return JSONResponse(
             content={"message": f"<OK> {time_delta} seconds since the last update."},
@@ -98,7 +100,7 @@ async def health_endpoint():
 
 
 @app.get("/xui")
-async def xui_endpoint():
+async def xui_endpoint() -> JSONResponse:
     await update_xui_status()
     return JSONResponse(
         content=xui_status,
@@ -107,7 +109,7 @@ async def xui_endpoint():
 
 
 @app.get("/capital")
-async def capital_endpoint():
+async def capital_endpoint() -> JSONResponse:
     return JSONResponse(
         content=stock_status | index_status,
         headers=NO_CACHE_HEADER,
@@ -115,7 +117,7 @@ async def capital_endpoint():
 
 
 @app.get("/exchange")
-async def exchange_endpoint():
+async def exchange_endpoint() -> JSONResponse:
     return JSONResponse(
         content=crypto_status | currency_status | commodity_status,
         headers=NO_CACHE_HEADER,
@@ -167,7 +169,7 @@ async def get_xui_info(path_suffix: str) -> dict:
 
 async def get_xui_status() -> dict[str, str]:
     status: dict = await get_xui_info("/server/status")
-    online: dict[str] = await get_xui_info("/xui/inbound/onlines")
+    online: dict = await get_xui_info("/xui/inbound/onlines")
 
     online_count: int = len(online["obj"]) if online["obj"] else 0
     online_name: str = random.choice(online["obj"]) if online_count > 0 else "-"
@@ -185,8 +187,8 @@ async def get_xui_status() -> dict[str, str]:
 async def update_xui_status() -> None:
     global xui_status
     xui_status = {
-        "speed": -1,
-        "usage": -1,
+        "speed": "-",
+        "usage": "-",
         "online": "-",
     }
 
@@ -202,12 +204,12 @@ def get_ticker_prices(symbol: str) -> tuple[float, float]:
     info = tickers.tickers[symbol].history(period="5d", interval="60m")
 
     latest_time: pandas.Timestamp = info.index.max()
-    current_price: float = info.loc[latest_time]["Close"]
+    current_price: float = float(info.at[latest_time, "Close"])
 
     counter: int = 0
     previous_time: pandas.Timestamp = latest_time - pandas.Timedelta(days=1)
 
-    while previous_time.date() not in info.index.date and counter < 31:
+    while previous_time.date() not in [d.date() for d in info.index] and counter < 31:
         previous_time -= pandas.Timedelta(days=1)
         counter += 1
 
@@ -218,18 +220,18 @@ def get_ticker_prices(symbol: str) -> tuple[float, float]:
 
 def get_info_by_ticker(tickers: str) -> dict[str, str]:
     info: dict[str, str] = dict()
-    tickers: list[str] = tickers.split(" ")
+    ticker_list: list[str] = tickers.split(" ")
 
-    for ticker in tickers:
+    for ticker in ticker_list:
         try:
             price, old_price = get_ticker_prices(ticker)
-            trend = ((price - old_price) / old_price) * 100
+            trend: float = ((price - old_price) / old_price) * 100
             info[ticker] = format_number(price)
             info[ticker + TREND_ENDING] = format_number(trend)
 
         except Exception as e:
             logger.error(
-                f"Error {repr(e)} occurred on line {e.__traceback__.tb_lineno}"
+                f"Error {repr(e)} occurred on line {e.__traceback__.tb_lineno if e.__traceback__ else '-1'}"
             )
 
     if info:
