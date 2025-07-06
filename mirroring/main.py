@@ -288,8 +288,6 @@ def create_step_summary(result: dict[Image, dict[str, Status]]) -> None:
             summary_file.write(row)
             summary_file.write(separator)
 
-        summary_file.write(separator)
-
         summary_file.write("```\n")
 
 
