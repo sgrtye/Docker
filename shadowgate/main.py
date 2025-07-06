@@ -148,7 +148,7 @@ async def create_inbound_routes() -> None:
 
 
 async def add_api_routes() -> None:
-    # Forward all requests to the proxy
+    # Forward all requests to the proxy (Used for setting up new dashboard)
     if not PROXY_PATH.startswith("/"):
         app.add_api_route(
             path="/{tail:path}",
@@ -166,7 +166,7 @@ async def add_api_routes() -> None:
             methods=REQUEST_METHODS,
         )
 
-        #  Config files
+        # Config files
         app.add_api_route(
             path="/conf/{tail:path}",
             endpoint=get_config,
