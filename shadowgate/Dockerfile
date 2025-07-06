@@ -5,7 +5,7 @@ EXPOSE 80
 
 COPY . /app
 WORKDIR /app
-RUN uv sync --locked
+RUN uv sync --locked --system --no-dev
 
 VOLUME /logs
 VOLUME /conf
