@@ -187,7 +187,7 @@ def schedule_config_updates() -> None:
     scheduler = AsyncIOScheduler()
 
     scheduler.add_job(
-        update_mitce_config(MITCE_URL),
+        partial(update_mitce_config, MITCE_URL),
         "cron",
         hour="0,8,16",
         minute="24",
