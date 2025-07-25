@@ -7,6 +7,7 @@ import platform
 import signal
 import time
 from collections import deque
+from dataclasses import dataclass
 from datetime import datetime
 
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED, JobExecutionEvent
@@ -51,14 +52,28 @@ BOOK_PATH: str = "/config/book.txt"
 IP_MAPPING_PATH: str = "/cache/ip_cache.json"
 BOOK_CACHE_PATH: str = "/cache/book_cache.json"
 
-BOOK_NAME_INDEX = 0
-BOOK_URL_INDEX = 1
+SCRAPER_RETRY: int = 5
+IP_RECORD_MAX_AGE: int = 60 * 60 * 24 * 7  # 7 days
+HEALTH_CHECK_TIMEOUT: int = 60 * 40  # 40 minutes
 
-books: list[tuple[str, str]] = []
-titles: dict[str, deque[tuple[str, str]]] = dict()  # {book_name: deque[title, date])}
-mapping: list[
-    tuple[str, tuple[str, str, str, str]]
-] = []  # [(key, (ip, port, username, password))]
+
+@dataclass(frozen=True)
+class Proxy:
+    ip: str
+    port: str
+    username: str
+    password: str
+
+
+@dataclass(frozen=True)
+class Book:
+    name: str
+    url: str
+
+
+books: list[Book] = []
+mapping: list[tuple[str, Proxy]] = []  # [(key, proxy)]
+titles: dict[str, deque[tuple[str, str]]] = dict()  # {book: deque[title, date]}
 
 book_index: int = 0
 loop_index: int = 0
@@ -77,7 +92,7 @@ NO_CACHE_HEADER: dict[str, str] = {
 
 @app.get("/health")
 async def health_endpoint() -> JSONResponse:
-    if (time_delta := time.time() - last_updated_time) < 1200:
+    if (time_delta := time.time() - last_updated_time) < HEALTH_CHECK_TIMEOUT:
         return JSONResponse(
             content={"message": f"<OK> {time_delta} seconds since the last update."},
             headers=NO_CACHE_HEADER,
@@ -95,12 +110,14 @@ async def health_endpoint() -> JSONResponse:
 @app.get("/update")
 async def update_endpoint() -> JSONResponse:
     payload: dict[str, tuple[str, str, str]] = {
-        name: (
-            titles[name][-1][0] if titles[name] else "Unknown",
-            titles[name][-1][1] if titles[name] else datetime(2000, 1, 1).isoformat(),
-            link,
+        book.name: (
+            titles[book.name][-1][0] if titles[book.name] else "Unknown",
+            titles[book.name][-1][1]
+            if titles[book.name]
+            else datetime(2000, 1, 1).isoformat(),
+            book.url,
         )
-        for name, link in books
+        for book in books
     }
     return JSONResponse(content=payload, headers=NO_CACHE_HEADER)
 
@@ -141,9 +158,9 @@ def load_scraper_api_keys() -> list[str]:
     return scraper_api_keys
 
 
-async def load_proxies() -> list[tuple[str, str, str, str]]:
+async def load_proxies() -> list[Proxy]:
     try:
-        result: list[tuple[str, str, str, str]] = []
+        result: list[Proxy] = []
         async with AsyncClient() as client:
             response = await client.get(PROXY_URL)
 
@@ -155,7 +172,7 @@ async def load_proxies() -> list[tuple[str, str, str, str]]:
 
         for ip_entry in ip_list:
             ip, port, username, password = ip_entry.rstrip("\r").split(":")
-            result.append((ip, port, username, password))
+            result.append(Proxy(ip, port, username, password))
 
     except Exception as e:
         logger.error(f"Loading proxies failed with {repr(e)}")
@@ -173,7 +190,7 @@ def load_books() -> None:
         raise SystemExit(1)
 
     try:
-        result: list[tuple[str, str]] = []
+        result: list[Book] = []
 
         with open(BOOK_PATH, "r") as file:
             lines = file.readlines()
@@ -182,8 +199,8 @@ def load_books() -> None:
             if line.startswith("//"):
                 continue
 
-            name, link = line.strip().split("@")
-            result.append((name, link))
+            name, url = line.strip().split("@")
+            result.append(Book(name, url))
 
     except Exception as e:
         logger.critical(f"Loading books failed with {repr(e)}")
@@ -214,23 +231,21 @@ def load_titles() -> None:
         with open(BOOK_CACHE_PATH, "r") as file:
             cache: dict[str, list[list[str]]] = json.load(file)
 
-        book_names: list[str] = [book[BOOK_NAME_INDEX] for book in books]
-
         for name, info_list in cache.items():
-            if name in book_names:
+            if name in [book.name for book in books]:
                 result[name] = deque(
                     [(info[0], info[1]) for info in info_list], maxlen=5
                 )
 
-        for name, _ in books:
-            if name not in result:
-                result[name] = deque(maxlen=5)
+        for book in books:
+            if book.name not in result:
+                result[book.name] = deque(maxlen=5)
 
     except Exception as e:
         logger.error(
             f"Loading titles failed with {repr(e)}, defaulting to empty title list"
         )
-        result = {name: deque(maxlen=5) for name, _ in books}
+        result = {book.name: deque(maxlen=5) for book in books}
 
     global titles
     titles = result
@@ -241,7 +256,7 @@ def load_titles() -> None:
 def clean_up_and_save_mapping_record(
     keys: list[str], mapping_record: dict[str, dict[str, str]]
 ) -> None:
-    threshold: str = str(int(time.time()) - 60 * 60 * 24 * 7)  # 7 days ago
+    threshold: str = str(int(time.time()) - IP_RECORD_MAX_AGE)
 
     for key, ip_records in mapping_record.items():
         if key not in keys:
@@ -287,14 +302,15 @@ async def refresh_mapping() -> None:
         keys = load_scraper_api_keys()
         proxies = await load_proxies()
 
-        if not keys or not proxies:
-            logger.error("No valid keys or proxies found")
+        if not keys:
+            logger.error("No scraper API keys found")
             return
 
-        proxy_dict: dict[str, tuple[str, str, str, str]] = {
-            ip: (ip, port, username, password)
-            for ip, port, username, password in proxies
-        }
+        if not proxies:
+            logger.error("No proxies found")
+            return
+
+        proxy_dict: dict[str, Proxy] = {proxy.ip: proxy for proxy in proxies}
 
         key_set: set[str] = set(keys)
         proxy_set: set[str] = set(proxy_dict.keys())
@@ -339,10 +355,12 @@ async def refresh_mapping() -> None:
     logger.info(f"Set {len(mapping)} valid proxy mappings")
 
 
-async def get_url_html(url, key: str, proxy: str) -> str:
-    for count in range(3):
+async def get_url_html(url, key: str, proxy: Proxy) -> str:
+    for count in range(SCRAPER_RETRY):
         try:
-            async with AsyncClient(proxy=proxy) as client:
+            async with AsyncClient(
+                proxy=f"http://{proxy.username}:{proxy.password}@{proxy.ip}:{proxy.port}"
+            ) as client:
                 payload: dict[str, str] = {"api_key": key, "url": url, "max_cost": "1"}
                 response = await client.get(SCRAPER_URL, params=payload, timeout=120.0)
 
@@ -359,7 +377,7 @@ async def get_url_html(url, key: str, proxy: str) -> str:
                     )
 
         except Exception:
-            if count == 2:
+            if count == SCRAPER_RETRY - 1:
                 raise
 
     raise Exception("Wrong execution flow, should never reach here")
@@ -367,7 +385,6 @@ async def get_url_html(url, key: str, proxy: str) -> str:
 
 def extract_book_title(html: str) -> str:
     try:
-        logger.debug(html[:100])
         tree = etree.HTML(html, parser=None)
         div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
         span_element = div_element.xpath("./ul/li[1]/a/span")[0]
@@ -389,7 +406,7 @@ def successful_fetch() -> None:
     mapping_index = (mapping_index + 1) % len(mapping)
     last_updated_time = time.time()
 
-    logger.debug(f"Book fetched successfully for {books[book_index][BOOK_NAME_INDEX]}")
+    logger.debug(f"Book fetched successfully for {books[book_index].name}")
 
 
 async def failed_fetch(e: Exception) -> None:
@@ -398,7 +415,7 @@ async def failed_fetch(e: Exception) -> None:
 
     loop_index += 1
     mapping_index = (mapping_index + 1) % len(mapping)
-    logger.debug(f"Failed to fetch for {books[book_index][BOOK_NAME_INDEX]}")
+    logger.debug(f"Failed to fetch for {books[book_index].name}")
 
     if loop_index == len(mapping):
         save_titles()
@@ -409,33 +426,30 @@ async def failed_fetch(e: Exception) -> None:
 
 async def update_book() -> None:
     try:
-        logger.debug(f"Try to fetch updates for {books[book_index][BOOK_NAME_INDEX]}")
+        book_name = books[book_index].name
+        logger.debug(f"Try to fetch updates for {book_name}")
 
-        key, (ip, port, username, password) = mapping[mapping_index]
-        proxy: str = f"http://{username}:{password}@{ip}:{port}"
-
-        url = books[book_index][BOOK_URL_INDEX]
+        url = books[book_index].url
+        key, proxy = mapping[mapping_index]
         html = await get_url_html(url, key, proxy)
         title = extract_book_title(html)
 
         if title is None:
             raise Exception("Should never happen with a valid proxy")
 
-        if not any(t == title for t, _ in titles[books[book_index][BOOK_NAME_INDEX]]):
-            if titles[books[book_index][BOOK_NAME_INDEX]]:
+        if not any(t == title for t, _ in titles[book_name]):
+            if titles[book_name]:
                 await send_to_telebot(
-                    f"{books[book_index][BOOK_NAME_INDEX]}\n'{titles[books[book_index][BOOK_NAME_INDEX]][-1][0]}'\n->'{title}'\n{url}",
+                    f"{book_name}\n'{titles[book_name][-1][0]}'\n->'{title}'\n{url}",
                 )
 
-            titles[books[book_index][BOOK_NAME_INDEX]].append(
-                (title, datetime.now().isoformat())
-            )
+            titles[book_name].append((title, datetime.now().isoformat()))
 
         successful_fetch()
 
     except Exception as e:
         logger.error(
-            f"Error {repr(e)} occurred when checking {books[book_index][BOOK_NAME_INDEX]} with proxy {ip}:{port} using key {key}"
+            f"Error {repr(e)} occurred when checking {book_name} with proxy {proxy.ip} using key {key}"
         )
         logger.error(
             f"Error occurred during iteration {loop_index} on line {e.__traceback__.tb_lineno if e.__traceback__ else '-1'}"
