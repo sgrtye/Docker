@@ -52,6 +52,8 @@ BOOK_PATH: str = "/config/book.txt"
 IP_MAPPING_PATH: str = "/cache/ip_cache.json"
 BOOK_CACHE_PATH: str = "/cache/book_cache.json"
 
+FETCH_EVENT_ID: str = "fetch_book_event"
+
 SCRAPER_RETRY: int = 5
 IP_RECORD_MAX_AGE: int = 60 * 60 * 24 * 7  # 7 days
 HEALTH_CHECK_TIMEOUT: int = 60 * 40  # 40 minutes
@@ -70,6 +72,8 @@ class Book:
     name: str
     url: str
 
+
+scheduler = AsyncIOScheduler()
 
 books: list[Book] = []
 mapping: list[tuple[str, Proxy]] = []  # [(key, proxy)]
@@ -347,6 +351,18 @@ async def refresh_mapping() -> None:
 
         clean_up_and_save_mapping_record(keys, mapping_record)
 
+        if scheduler.get_job(FETCH_EVENT_ID):
+            scheduler.remove_job(FETCH_EVENT_ID)
+
+        scheduler.add_job(
+            update_book,
+            "interval",
+            minutes=60 // len(mapping),
+            id=FETCH_EVENT_ID,
+            max_instances=1,
+            coalesce=True,
+        )
+
     except Exception as e:
         logger.error(f"Refreshing mapping failed with {repr(e)}")
         await send_to_telebot(f"Refreshing mapping failed with {repr(e)}")
@@ -477,15 +493,7 @@ def job_listener(event: JobExecutionEvent) -> None:
         logger.debug("Job executed successfully")
 
 
-def schedule_tasks() -> None:
-    scheduler = AsyncIOScheduler()
-
-    scheduler.add_job(
-        update_book,
-        "interval",
-        minutes=60 // len(mapping),
-    )
-
+def schedule_refreshes() -> None:
     scheduler.add_job(
         save_titles,
         "cron",
@@ -525,7 +533,7 @@ async def main() -> None:
             logger.info("Signal handler registration skipped.")
             pass
 
-    schedule_tasks()
+    schedule_refreshes()
     logger.info("Novel monitor started")
 
     await start_api_server()
