@@ -1,4 +1,5 @@
 FROM python:3.12-alpine
+ENV PYTHONUNBUFFERED=1
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 COPY . /app
@@ -12,4 +13,4 @@ HEALTHCHECK --start-period=10s --interval=60s --timeout=3s CMD curl -f http://lo
 VOLUME /cache
 VOLUME /config
 
-CMD ["uv", "run", "python", "-u", "main.py"]
+CMD ["uv", "run", "main.py"]
