@@ -11,7 +11,7 @@ from datetime import datetime
 
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED, JobExecutionEvent
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from curl_cffi.requests import AsyncSession
+from httpx import AsyncClient
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from lxml import etree
@@ -100,8 +100,8 @@ async def send_to_telebot(message: str) -> None:
     payload: dict[str, str] = {"chat_id": TELEBOT_USER_ID, "text": message}
 
     try:
-        async with AsyncSession() as session:
-            await session.post(url, json=payload)
+        async with AsyncClient() as client:
+            await client.post(url, json=payload)
 
     except Exception as e:
         logger.error(f"Error occurred when sending message to telegram: {repr(e)}")
@@ -125,8 +125,8 @@ def load_unavailable_ips() -> list[str]:
 async def load_proxies() -> None:
     try:
         result: list[tuple[str, str, str, str]] = []
-        async with AsyncSession() as session:
-            response = await session.get(PROXY_URL)
+        async with AsyncClient() as client:
+            response = await client.get(PROXY_URL)
 
         if response.status_code != 200:
             raise Exception("Proxy server not responding")
@@ -215,10 +215,10 @@ def load_titles() -> None:
     logger.info("Cache loaded for titles")
 
 
-async def get_url_html(url, proxy=None) -> str | None:
+async def get_url_html(url:str, proxy:str | None =None) -> str | None:
     try:
-        async with AsyncSession() as session:
-            response = await session.get(url, impersonate="chrome", proxies=proxy)
+        async with AsyncClient(proxy = proxy) as client:
+            response = await client.get(url)
 
         response.encoding = "gbk"
         return response.text
@@ -281,10 +281,7 @@ async def update_book() -> None:
         logger.debug(f"Try to fetch updates for {books[book_index][BOOK_NAME_INDEX]}")
 
         ip, port, username, password = proxies[proxy_index]
-        proxy: dict[str, str] = {
-            "http": f"http://{username}:{password}@{ip}:{port}",
-            "https": f"http://{username}:{password}@{ip}:{port}",
-        }
+        proxy: str = f"http://{username}:{password}@{ip}:{port}"
 
         url = books[book_index][BOOK_URL_INDEX]
         html = await get_url_html(url, proxy)
