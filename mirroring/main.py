@@ -190,11 +190,11 @@ def download_and_push_image(image: Image, platform: str) -> None:
 
 
 def create_manifest(image: Image, statuses: dict[str, Status]) -> bool:
-    if all((status for status in statuses.values() if status == Status.UP_TO_DATE)):
+    if all(status == Status.UP_TO_DATE for status in statuses.values()):
         print(f"Image {image.name} is already up to date for all platforms.")
         return True
 
-    if all((status for status in statuses.values() if status == Status.NOT_SUPPORTED)):
+    if all(status == Status.NOT_SUPPORTED for status in statuses.values()):
         print(f"Image {image.name} is not supported on any platform.")
         return False
 
