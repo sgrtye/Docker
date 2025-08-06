@@ -3,7 +3,7 @@ name: Docker image mirroring
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 10 * * *'
+    - cron: '48 20 * * *'
   push:
     paths:
       - 'mirroring/images.txt'
