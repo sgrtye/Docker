@@ -1,6 +1,12 @@
 version: 2
+
 updates:
   - package-ecosystem: "uv"
-    directory: "/template"
+    directories:
+      - "/apiserver"
+      - "/novel"
+      - "/shadowgate"
+      - "/telebot"
+      - "/template"
     schedule:
       interval: "weekly"
