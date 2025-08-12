@@ -1,6 +1,13 @@
 version: 2
 
 updates:
+  - package-ecosystem: "github-actions"
+    directories:
+      - "/"
+      - ".github/actions/Docker"
+    schedule:
+      interval: "weekly"
+
   - package-ecosystem: "uv"
     directories:
       - "/apiserver"
@@ -10,8 +17,3 @@ updates:
       - "/template"
     schedule:
       interval: "weekly"
-
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "monthly"
