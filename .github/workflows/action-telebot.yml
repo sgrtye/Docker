@@ -3,7 +3,7 @@ name: Telebot build
 on:
   push:
     paths:
-      - 'telebot/**'
+      - "telebot/**"
   workflow_dispatch:
 
 jobs:
@@ -21,6 +21,6 @@ jobs:
           REGISTRY_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
           REGISTRY_PASSWORD: ${{ secrets.DOCKER_HUB_TOKEN }}
           REGISTRY_NAME_SPACE: ${{ secrets.DOCKER_HUB_NAME_SPACE }}
-          DOCKER_BUILD_NAME: 'telebot'
-          DOCKER_BUILD_PATH: './telebot'
+          DOCKER_BUILD_NAME: "telebot"
+          DOCKER_BUILD_PATH: "./telebot"
           DOCKER_BUILD_TAG: ${{ github.ref_name == 'main' && 'latest' || 'dev' }}
