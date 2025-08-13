@@ -27,7 +27,7 @@ inputs:
     default: 'linux/amd64, linux/arm64'
 
 runs:
-  using: “composite”
+  using: "composite"
 
   steps:
     - name: Set up QEMU
