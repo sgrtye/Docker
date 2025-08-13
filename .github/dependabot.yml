@@ -6,14 +6,14 @@ updates:
       - "/"
       - ".github/actions/Docker"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "uv"
     directories:
-      - "/apiserver"
-      - "/novel"
-      - "/shadowgate"
-      - "/telebot"
-      - "/template"
+      - "apiserver"
+      - "novel"
+      - "shadowgate"
+      - "telebot"
+      - "template"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
