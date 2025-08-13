@@ -5,9 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "apscheduler",
-    "fastapi",
-    "httpx",
-    "uvicorn",
-    "websockets",
+    "apscheduler>=3.11.0",
+    "fastapi>=0.116.1",
+    "httpx>=0.28.1",
+    "uvicorn>=0.35.0",
+    "websockets>=15.0.1",
 ]
