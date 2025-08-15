@@ -6,7 +6,7 @@ EXPOSE 80
 
 COPY . /app
 WORKDIR /app
-RUN uv sync --locked
+RUN uv sync --locked && uv cache clean
 
 VOLUME /logs
 VOLUME /conf
