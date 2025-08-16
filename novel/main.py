@@ -371,7 +371,7 @@ async def refresh_mapping() -> None:
     logger.info(f"Set {len(mapping)} valid proxy mappings")
 
 
-async def get_url_html(url, key: str, proxy: Proxy) -> str:
+async def get_url_html_via_scraper_api(url:str, key: str, proxy: Proxy) -> str:
     for count in range(SCRAPER_RETRY):
         try:
             async with AsyncClient(
@@ -397,6 +397,21 @@ async def get_url_html(url, key: str, proxy: Proxy) -> str:
                 raise
 
     raise Exception("Wrong execution flow, should never reach here")
+
+
+async def get_url_html_via_proxy(url:str, proxy: Proxy) -> str:
+        async with AsyncClient(
+            proxy=f"http://{proxy.username}:{proxy.password}@{proxy.ip}:{proxy.port}"
+        ) as client:
+            response = await client.get(url, timeout=120.0)
+
+        match response.status_code:
+            case 200:
+                return response.text
+            case _:
+                raise Exception(
+                    f"Failed to fetch with status code {response.status_code} with message: {response.text}"
+                )
 
 
 def extract_book_title(html: str) -> str:
@@ -447,7 +462,8 @@ async def update_book() -> None:
 
         url = books[book_index].url
         key, proxy = mapping[mapping_index]
-        html = await get_url_html(url, key, proxy)
+        # html = await get_url_html_via_proxy(url, proxy)
+        html = await get_url_html_via_scraper_api(url, key, proxy)
         title = extract_book_title(html)
 
         if title is None:
