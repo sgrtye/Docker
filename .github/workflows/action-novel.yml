@@ -20,4 +20,4 @@ jobs:
           REGISTRY_PASSWORD: ${{ secrets.DOCKER_HUB_TOKEN }}
           DOCKER_BUILD_NAME: "novel"
           DOCKER_BUILD_PATH: "./novel"
-          DOCKER_BUILD_TAG: ${{ github.ref_name == 'main' && 'latest' || 'dev' }}
+          DRY_RUN: ${{ github.actor == 'dependabot[bot]' }}

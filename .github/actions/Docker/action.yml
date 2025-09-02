@@ -2,26 +2,29 @@ name: Docker
 
 inputs:
   REGISTRY_ADDRESS:
-    description: "REGISTRY ADDRESS TO STORE IMAGE"
+    description: "Registry address"
     default: "docker.io"
   REGISTRY_USERNAME: 
-    description: "REGISTRY USERNAME"
+    description: "Registry username"
     default: "sgrtye"
   REGISTRY_PASSWORD: 
-    description: "REGISTRY PASSWORD"
+    description: "Registry password"
     required: true
   DOCKER_BUILD_NAME: 
-    description: "DOCKER BUILD NAME"
+    description: "Docker build name"
     required: true
   DOCKER_BUILD_PATH: 
-    description: "DOCKER BUILD PATH"
+    description: "Docker build path"
     required: true
   DOCKER_BUILD_TAG: 
-    description: "DOCKER BUILD TAG"
-    required: true
+    description: "Docker build tag"
+    default: "latest"
   DOCKER_BUILD_PLATFORMS: 
-    description: "DOCKER BUILD PLATFORMS"
+    description: "Docker build platforms"
     default: "linux/amd64, linux/arm64"
+  DRY_RUN:
+    description: "Build image without pushing"
+    required: true
 
 runs:
   using: "composite"
@@ -51,6 +54,6 @@ runs:
       uses: docker/build-push-action@v6
       with:
         context: ${{ inputs.DOCKER_BUILD_PATH }}
-        push: true
+        push: ${{ inputs.DRY_RUN != 'true' }}
         platforms: ${{ inputs.DOCKER_BUILD_PLATFORMS }}
         tags: ${{ steps.meta.outputs.tags }}
