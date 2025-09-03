@@ -6,7 +6,7 @@ updates:
       - "/"
       - ".github/actions/Docker"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
 
   - package-ecosystem: "uv"
     directories:
@@ -16,4 +16,4 @@ updates:
       - "telebot"
       - "template"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
