@@ -7,6 +7,10 @@ updates:
       - ".github/actions/Docker"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   - package-ecosystem: "uv"
     directories:
@@ -17,3 +21,7 @@ updates:
       - "template"
     schedule:
       interval: "weekly"
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
