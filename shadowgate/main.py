@@ -12,7 +12,7 @@ from uvicorn import Config, Server
 
 from mitce import update_mitce_config
 from subscription import get_config_file
-from xui import get_inbounds, set_credentials
+from sui import get_vless_inbounds, set_credentials
 
 logger = logging.getLogger("my_app")
 logger.setLevel(logging.INFO)
@@ -24,33 +24,30 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.propagate = False
 
+sui_token: str | None = os.getenv("SUI_TOKEN")
 mitce_url: str | None = os.getenv("MITCE_URL")
 proxy_host: str | None = os.getenv("PROXY_HOST")
 proxy_port: str | None = os.getenv("PROXY_PORT")
 proxy_path: str | None = os.getenv("PROXY_PATH")
 host_domain: str | None = os.getenv("HOST_DOMAIN")
-xui_username: str | None = os.getenv("XUI_USERNAME")
-xui_password: str | None = os.getenv("XUI_PASSWORD")
 
 if (
-    mitce_url is None
+    sui_token is None
+    or mitce_url is None
     or proxy_host is None
     or proxy_port is None
     or proxy_path is None
     or host_domain is None
-    or xui_username is None
-    or xui_password is None
 ):
     logger.critical("Environment variables not fulfilled")
     raise SystemExit(1)
 else:
+    SUI_TOKEN: str = sui_token
     MITCE_URL: str = mitce_url
     PROXY_HOST: str = proxy_host
     PROXY_PORT: str = proxy_port
     PROXY_PATH: str = proxy_path
     HOST_DOMAIN: str = host_domain
-    XUI_USERNAME: str = xui_username
-    XUI_PASSWORD: str = xui_password
 
 REQUEST_METHODS: list[str] = ["GET", "POST", "PUT", "DELETE", "PATCH"]
 app = FastAPI()
@@ -138,7 +135,7 @@ async def get_config(request: Request, tail: str) -> Response:
 
 
 async def create_inbound_routes() -> None:
-    inbounds = await get_inbounds()
+    inbounds = await get_vless_inbounds()
 
     for inbound in inbounds:
         app.router.add_websocket_route(
@@ -203,11 +200,10 @@ async def start_api_server() -> None:
 
 async def main() -> None:
     set_credentials(
+        SUI_TOKEN,
         PROXY_HOST,
         PROXY_PORT,
         PROXY_PATH,
-        XUI_USERNAME,
-        XUI_PASSWORD,
     )
 
     await add_api_routes()
