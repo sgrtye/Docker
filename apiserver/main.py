@@ -145,7 +145,7 @@ def bytes_to_speed(bytes: int, decimal_place: int = 2) -> str:
 
 
 async def get_sui_json_response(path_suffix: str) -> dict:
-    info = await sui_session.get(SUI_URL + path_suffix)
+    info = await sui_session.get(SUI_URL + path_suffix, headers={"token": SUI_TOKEN})
     return info.json()
 
 
