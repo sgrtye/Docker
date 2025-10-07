@@ -9,6 +9,7 @@ import signal
 import time
 
 import httpx
+import numpy
 import pandas
 import yfinance
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -188,7 +189,10 @@ def get_ticker_prices(symbol: str) -> tuple[float, float]:
     info = tickers.tickers[symbol].history(period="5d", interval="60m")
 
     latest_time: pandas.Timestamp = info.index.max()
-    current_price: float = float(info.at[latest_time, "Close"])
+    close_value = info.at[latest_time, "Close"]
+
+    assert isinstance(close_value, (numpy.integer, numpy.floating))
+    current_price = float(close_value)
 
     counter: int = 0
     previous_time: pandas.Timestamp = latest_time - pandas.Timedelta(days=1)
