@@ -26,20 +26,18 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.propagate = False
 
-xui_url: str | None = os.getenv("XUI_URL")
-xui_username: str | None = os.getenv("XUI_USERNAME")
-xui_password: str | None = os.getenv("XUI_PASSWORD")
+sui_url: str | None = os.getenv("SUI_URL")
+sui_token: str | None = os.getenv("SUI_TOKEN")
 
-if xui_url is None or xui_username is None or xui_password is None:
+if sui_url is None or sui_token is None:
     logger.critical("Environment variables not fulfilled")
     raise SystemExit(1)
 else:
-    XUI_URL: str = xui_url
-    XUI_USERNAME: str = xui_username
-    XUI_PASSWORD: str = xui_password
+    SUI_URL: str = sui_url
+    SUI_TOKEN: str = sui_token
 
 
-xui_status: dict[str, str] = dict()
+sui_status: dict[str, str] = dict()
 stock_status: dict[str, str] = dict()
 index_status: dict[str, str] = dict()
 crypto_status: dict[str, str] = dict()
@@ -64,13 +62,12 @@ MAPPING: dict[str, dict[str, str]] = {
     COMMODITIES: commodity_status,
 }
 
-xui_session = httpx.AsyncClient()
+sui_session = httpx.AsyncClient()
 tickers = yfinance.Tickers(
     " ".join([STOCKS, INDICES, CRYPTOS, CURRENCIES, COMMODITIES])
 )
 
 last_updated_time: float = time.time()
-xui_rate_limit_time: float = time.time()
 
 app = FastAPI()
 NO_CACHE_HEADER: dict[str, str] = {
@@ -99,11 +96,11 @@ async def health_endpoint() -> JSONResponse:
         )
 
 
-@app.get("/xui")
-async def xui_endpoint() -> JSONResponse:
-    await update_xui_status()
+@app.get("/sui")
+async def sui_endpoint() -> JSONResponse:
+    await update_sui_status()
     return JSONResponse(
-        content=xui_status,
+        content=sui_status,
         headers=NO_CACHE_HEADER,
     )
 
@@ -147,53 +144,40 @@ def bytes_to_speed(bytes: int, decimal_place: int = 2) -> str:
     return format_bytes(bytes, decimal_place) + "/s"
 
 
-async def xui_login() -> None:
-    global xui_rate_limit_time
-    # Rate limit to every 5 seconds
-    if time.time() - xui_rate_limit_time < 5:
-        return
-
-    await xui_session.post(
-        XUI_URL + "/login", data={"username": XUI_USERNAME, "password": XUI_PASSWORD}
-    )
-    xui_rate_limit_time = time.time()
-
-
-async def get_xui_info(path_suffix: str) -> dict:
-    if (info := await xui_session.post(XUI_URL + path_suffix)).status_code != 200:
-        await xui_login()
-        info = await xui_session.post(XUI_URL + path_suffix)
-
+async def get_sui_json_response(path_suffix: str) -> dict:
+    info = await sui_session.get(SUI_URL + path_suffix)
     return info.json()
 
 
-async def get_xui_status() -> dict[str, str]:
-    status: dict = await get_xui_info("/server/status")
-    online: dict = await get_xui_info("/xui/inbound/onlines")
+async def get_sui_status() -> dict[str, str]:
+    online: dict = await get_sui_json_response("/apiv2/onlines")
+    status: dict = await get_sui_json_response("/apiv2/status?r=net")
 
-    online_count: int = len(online["obj"]) if online["obj"] else 0
-    online_name: str = random.choice(online["obj"]) if online_count > 0 else "-"
+    online_users: list[str] = online.get("obj", {}).get("user", [])
+    online_name: str = random.choice(online_users) if len(online_users) > 0 else "-"
 
     info: dict[str, str] = {
-        "speed": bytes_to_speed(status["obj"]["netIO"]["up"]),
-        "usage": format_bytes(status["obj"]["netTraffic"]["sent"]),
+        # "speed": bytes_to_speed(status["obj"]["netIO"]["up"]),
+        "usage": format_bytes(status.get("obj", {}).get("net", {}).get("recv", 0)),
         "online": (
-            f"{online_name} ({online_count})" if online_count > 1 else online_name
+            f"{online_name} ({len(online_users)})"
+            if len(online_users) > 1
+            else online_name
         ),
     }
     return info
 
 
-async def update_xui_status() -> None:
-    global xui_status
-    xui_status = {
-        "speed": "-",
+async def update_sui_status() -> None:
+    global sui_status
+    sui_status = {
+        # "speed": "-",
         "usage": "-",
         "online": "-",
     }
 
     try:
-        xui_status.update(await get_xui_status())
+        sui_status.update(await get_sui_status())
 
     # Exception handled by displaying the above default values
     except Exception:
