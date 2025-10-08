@@ -141,13 +141,10 @@ def format_bytes(bytes: int, decimal_place: int = 2) -> str:
     return format_number(bytes / math.pow(k, i), decimal_place) + " " + sizes[i]
 
 
-def bytes_to_speed(bytes: int, decimal_place: int = 2) -> str:
-    return format_bytes(bytes, decimal_place) + "/s"
-
-
 async def get_sui_json_response(path_suffix: str) -> dict:
-    info = await sui_session.get(SUI_URL + path_suffix, headers={"token": SUI_TOKEN})
-    return info.json()
+    return (
+        await sui_session.get(SUI_URL + path_suffix, headers={"token": SUI_TOKEN})
+    ).json()
 
 
 async def get_sui_status() -> dict[str, str]:
@@ -158,7 +155,7 @@ async def get_sui_status() -> dict[str, str]:
     online_name: str = random.choice(online_users) if len(online_users) > 0 else "-"
 
     info: dict[str, str] = {
-        # "speed": bytes_to_speed(status["obj"]["netIO"]["up"]),
+        # "speed": format_bytes(status["obj"]["netIO"]["up"])  + "/s",
         "usage": format_bytes(status.get("obj", {}).get("net", {}).get("recv", 0)),
         "online": (
             f"{online_name} ({len(online_users)})"

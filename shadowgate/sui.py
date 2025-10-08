@@ -24,26 +24,29 @@ def set_credentials(
 
 
 async def get_load_json() -> dict:
-    response = await httpx.AsyncClient().get(
-        f"{SUI_URL}/apiv2/load", headers={"token": SUI_TOKEN}
-    )
-    return response.json()
+    return (
+        await httpx.AsyncClient().get(
+            f"{SUI_URL}/apiv2/load", headers={"token": SUI_TOKEN}
+        )
+    ).json()
 
 
 async def get_inbounds_json(ids: list[int]) -> dict:
-    response = await httpx.AsyncClient().get(
-        f"{SUI_URL}/apiv2/inbounds?id={','.join(map(str, ids))}",
-        headers={"token": SUI_TOKEN},
-    )
-    return response.json()
+    return (
+        await httpx.AsyncClient().get(
+            f"{SUI_URL}/apiv2/inbounds?id={','.join(map(str, ids))}",
+            headers={"token": SUI_TOKEN},
+        )
+    ).json()
 
 
 async def get_clients_json(ids: list[int]) -> dict:
-    response = await httpx.AsyncClient().get(
-        f"{SUI_URL}/apiv2/clients?id={','.join(map(str, ids))}",
-        headers={"token": SUI_TOKEN},
-    )
-    return response.json()
+    return (
+        await httpx.AsyncClient().get(
+            f"{SUI_URL}/apiv2/clients?id={','.join(map(str, ids))}",
+            headers={"token": SUI_TOKEN},
+        )
+    ).json()
 
 
 async def get_vless_inbounds() -> list[dict[str, str]]:
