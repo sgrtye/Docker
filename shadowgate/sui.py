@@ -24,29 +24,38 @@ def set_credentials(
 
 
 async def get_load_json() -> dict:
-    return (
+    response = (
         await httpx.AsyncClient().get(
             f"{SUI_URL}/apiv2/load", headers={"token": SUI_TOKEN}
         )
     ).json()
 
+    assert response["success"]
+    return response
+
 
 async def get_inbounds_json(ids: list[int]) -> dict:
-    return (
+    response = (
         await httpx.AsyncClient().get(
             f"{SUI_URL}/apiv2/inbounds?id={','.join(map(str, ids))}",
             headers={"token": SUI_TOKEN},
         )
     ).json()
 
+    assert response["success"]
+    return response
+
 
 async def get_clients_json(ids: list[int]) -> dict:
-    return (
+    response = (
         await httpx.AsyncClient().get(
             f"{SUI_URL}/apiv2/clients?id={','.join(map(str, ids))}",
             headers={"token": SUI_TOKEN},
         )
     ).json()
+
+    assert response["success"]
+    return response
 
 
 async def get_vless_inbounds() -> list[dict[str, str]]:
@@ -54,12 +63,12 @@ async def get_vless_inbounds() -> list[dict[str, str]]:
         load_response = await get_load_json()
 
         id_list: list[int] = [
-            client["id"] for client in load_response.get("obj", {}).get("inbounds", [])
+            client["id"] for client in load_response["obj"].get("inbounds", [])
         ]
         inbounds_response = await get_inbounds_json(id_list)
 
         results: list[dict[str, str]] = []
-        for inbound in inbounds_response.get("obj", {}).get("inbounds", []):
+        for inbound in inbounds_response["obj"].get("inbounds", []):
             # Add inbounds with valid vless config
             try:
                 assert inbound["tag"] == "VLESS"
@@ -69,6 +78,7 @@ async def get_vless_inbounds() -> list[dict[str, str]]:
                     "path": inbound["transport"]["path"],
                 }
                 results.append(info)
+
             except Exception:
                 logger.warning("Failed to parse an inbound, skipping")
                 continue
@@ -85,12 +95,12 @@ async def get_clients() -> list[dict[str, str]]:
         load_response = await get_load_json()
 
         id_list: list[int] = [
-            client["id"] for client in load_response.get("obj", {}).get("clients", [])
+            client["id"] for client in load_response["obj"].get("clients", [])
         ]
         clients_response = await get_clients_json(id_list)
 
         results: list[dict[str, str]] = []
-        for client in clients_response.get("obj", {}).get("clients", []):
+        for client in clients_response["obj"].get("clients", []):
             # Add clients with valid vless config
             try:
                 assert "vless" in client["config"]
@@ -100,6 +110,7 @@ async def get_clients() -> list[dict[str, str]]:
                     "uuid": client["config"]["vless"]["uuid"],
                 }
                 results.append(info)
+
             except Exception:
                 logger.warning("Failed to parse a client, skipping")
                 continue

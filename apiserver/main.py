@@ -149,14 +149,16 @@ async def get_sui_json_response(path_suffix: str) -> dict:
 
 async def get_sui_status() -> dict[str, str]:
     online: dict = await get_sui_json_response("/apiv2/onlines")
+    assert online["success"]
     status: dict = await get_sui_json_response("/apiv2/status?r=net")
+    assert status["success"]
 
-    online_users: list[str] = online.get("obj", {}).get("user", [])
+    online_users: list[str] = online["obj"].get("user", [])
     online_name: str = random.choice(online_users) if len(online_users) > 0 else "-"
 
     info: dict[str, str] = {
-        # "speed": format_bytes(status["obj"]["netIO"]["up"])  + "/s",
-        "usage": format_bytes(status.get("obj", {}).get("net", {}).get("recv", 0)),
+        # "speed": format_bytes(status["obj"]["net"]["up"])  + "/s",
+        "usage": format_bytes(status["obj"]["net"]["recv"]),
         "online": (
             f"{online_name} ({len(online_users)})"
             if len(online_users) > 1
