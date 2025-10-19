@@ -2,8 +2,8 @@ import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
 
-from fastapi import HTTPException, Request, Response
-from fastapi.responses import FileResponse
+from fastapi import Request, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 
 from constants import (
     CONFIG_ACCESS_LOG_PATH,
@@ -23,9 +23,9 @@ logger.propagate = False
 
 
 def get_static_config(file_name: str, client: dict[str, str]) -> FileResponse | None:
-    if os.path.exists(f"/conf/{file_name}"):
+    if os.path.exists(f"/conf/{client['name']}/{file_name}"):
         logger.info(f"{client['name']} accessed {file_name}")
-        return FileResponse(f"/conf/{file_name}")
+        return FileResponse(f"/conf/{client['name']}/{file_name}")
 
     return None
 
@@ -58,31 +58,58 @@ def get_mitce_config(request: Request, client: dict[str, str]) -> FileResponse |
     return None
 
 
-async def get_config_file(request: Request, tail: str) -> Response:
+def validate_config(
+    request: Request, clients: list[dict[str, str]]
+) -> FileResponse | None:
+    query_params = dict(request.query_params)
+
+    for client in clients:
+        if (
+            query_params.get("name") != client["name"]
+            or query_params.get("uuid") != client["uuid"][:13]
+        ):
+            continue
+
+        # Provide static files if exists in the named client's folder
+        if (
+            response := get_static_config(query_params.get("file", ""), client)
+        ) is not None:
+            return response
+
+        # Return mitce config by default
+        if (
+            query_params.get("provider") in ["yidong", "liantong", "dianxin"]
+            and query_params.get("file") == "config.yaml"
+            and (response := get_mitce_config(request, client)) is not None
+        ):
+            return response
+
+
+def reconstruct_request(request: Request, tail: str) -> RedirectResponse | None:
     path_parts = tail.split("/")
+
+    if len(path_parts) != 4 or len(path_parts[0].split("-")) != 3:
+        return None
+
+    new_parameters: dict[str, str] = {
+        "name": path_parts[0].split("-")[0],
+        "uuid": "-".join(path_parts[0].split("-")[1:]),
+        "location": path_parts[1],
+        "provider": path_parts[2],
+        "file": path_parts[3],
+    }
+
+    query_params = dict(request.query_params) | new_parameters
+    new_url = str(request.url.include_query_params(**query_params)).replace(tail, "")
+    return RedirectResponse(url=new_url)
+
+
+async def get_config_file(request: Request, tail: str) -> Response:
+    if (response := reconstruct_request(request, tail)) is not None:
+        return response
+
     clients = await get_clients()
-    user_agent = request.headers.get("user-agent", "Unknown").lower()
+    if (response := validate_config(request, clients)) is not None:
+        return response
 
-    if any(agent in user_agent for agent in ["shadowrocket", "clash"]):
-        for client in clients:
-            if path_parts[0] != f"{client['name']}-{client['uuid'][0:13]}":
-                continue
-
-            # Provide static files only for the main user
-            if (
-                client["name"] == "SGRTYE"
-                and (response := get_static_config("/".join(path_parts[1:]), client))
-                is not None
-            ):
-                return response
-
-            # Return mitce config by default
-            if (
-                len(path_parts) == 4
-                and path_parts[2] in ["yidong", "liantong", "dianxin"]
-                and path_parts[3] == "config.yaml"
-                and (response := get_mitce_config(request, client)) is not None
-            ):
-                return response
-
-    raise HTTPException(status_code=404, detail="Not Found")
+    return JSONResponse({"detail": "Not Found"}, status_code=404)
