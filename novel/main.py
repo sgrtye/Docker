@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import platform
+import re
 import signal
 import time
 from collections import deque
@@ -371,7 +372,7 @@ async def refresh_mapping() -> None:
     logger.info(f"Set {len(mapping)} valid proxy mappings")
 
 
-async def get_url_html_via_scraper_api(url:str, key: str, proxy: Proxy) -> str:
+async def get_url_html_via_scraper_api(url: str, key: str, proxy: Proxy) -> str:
     for count in range(SCRAPER_RETRY):
         try:
             async with AsyncClient(
@@ -399,19 +400,19 @@ async def get_url_html_via_scraper_api(url:str, key: str, proxy: Proxy) -> str:
     raise Exception("Wrong execution flow, should never reach here")
 
 
-async def get_url_html_via_proxy(url:str, proxy: Proxy) -> str:
-        async with AsyncClient(
-            proxy=f"http://{proxy.username}:{proxy.password}@{proxy.ip}:{proxy.port}"
-        ) as client:
-            response = await client.get(url, timeout=120.0)
+async def get_url_html_via_proxy(url: str, proxy: Proxy) -> str:
+    async with AsyncClient(
+        proxy=f"http://{proxy.username}:{proxy.password}@{proxy.ip}:{proxy.port}"
+    ) as client:
+        response = await client.get(url, timeout=120.0)
 
-        match response.status_code:
-            case 200:
-                return response.text
-            case _:
-                raise Exception(
-                    f"Failed to fetch with status code {response.status_code} with message: {response.text}"
-                )
+    match response.status_code:
+        case 200:
+            return response.text
+        case _:
+            raise Exception(
+                f"Failed to fetch with status code {response.status_code} with message: {response.text}"
+            )
 
 
 def extract_book_title(html: str) -> str:
@@ -455,6 +456,11 @@ async def failed_fetch(e: Exception) -> None:
         raise e
 
 
+def get_first_number(string: str) -> str:
+    match = re.search(r"\d+", string)
+    return match.group(0) if match else "0"
+
+
 async def update_book() -> None:
     try:
         book_name = books[book_index].name
@@ -472,7 +478,7 @@ async def update_book() -> None:
         if not any(t == title for t, _ in titles[book_name]):
             if titles[book_name]:
                 await send_to_telebot(
-                    f"{book_name}\n'{titles[book_name][-1][0]}'\n->'{title}'\n{url}",
+                    f"{book_name}\n'{get_first_number(titles[book_name][-1][0])}' -> '{get_first_number(title)}'\n{url}",
                 )
 
             titles[book_name].append((title, datetime.now().isoformat()))
