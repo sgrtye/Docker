@@ -478,7 +478,7 @@ async def update_book() -> None:
         if not any(t == title for t, _ in titles[book_name]):
             if titles[book_name]:
                 await send_to_telebot(
-                    f"{book_name}\n'{get_first_number(titles[book_name][-1][0])}' -> '{get_first_number(title)}'\n{url}",
+                    f"{book_name}\n'{get_first_number(titles[book_name][-1][0])}'章更新至'{get_first_number(title)}章'\n{url}",
                 )
 
             titles[book_name].append((title, datetime.now().isoformat()))
