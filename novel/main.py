@@ -358,7 +358,7 @@ async def refresh_mapping() -> None:
         scheduler.add_job(
             update_book,
             "interval",
-            minutes=60 // len(mapping),
+            minutes=(60 // len(mapping)) * 10,
             id=FETCH_EVENT_ID,
             max_instances=1,
             coalesce=True,
@@ -378,7 +378,7 @@ async def get_url_html_via_scraper_api(url: str, key: str, proxy: Proxy) -> str:
             async with AsyncClient(
                 proxy=f"http://{proxy.username}:{proxy.password}@{proxy.ip}:{proxy.port}"
             ) as client:
-                payload: dict[str, str] = {"api_key": key, "url": url, "max_cost": "1"}
+                payload: dict[str, str] = {"api_key": key, "url": url, "max_cost": "10"}
                 response = await client.get(SCRAPER_URL, params=payload, timeout=120.0)
 
             match response.status_code:
