@@ -57,7 +57,8 @@ FETCH_EVENT_ID: str = "fetch_book_event"
 
 SCRAPER_RETRY: int = 5
 IP_RECORD_MAX_AGE: int = 60 * 60 * 24 * 7  # 7 days
-HEALTH_CHECK_TIMEOUT: int = 60 * 40  # 40 minutes
+# HEALTH_CHECK_TIMEOUT: int = 60 * 40  # 40 minutes
+HEALTH_CHECK_TIMEOUT: int = 60 * 60 * 3  # 3 hours
 
 
 @dataclass(frozen=True)
@@ -397,7 +398,8 @@ async def get_url_html_via_scraper_api(url: str, key: str, proxy: Proxy) -> str:
             if count == SCRAPER_RETRY - 1:
                 raise
 
-    raise Exception("Wrong execution flow, should never reach here")
+    else:
+        raise Exception("Wrong execution flow, should never reach here")
 
 
 async def get_url_html_via_proxy(url: str, proxy: Proxy) -> str:
