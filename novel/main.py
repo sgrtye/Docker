@@ -16,7 +16,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from httpx import AsyncClient
-from lxml import etree
+from selectolax.parser import HTMLParser
 from uvicorn import Config, Server
 
 logger = logging.getLogger("my_app")
@@ -418,15 +418,14 @@ async def get_url_html_via_proxy(url: str, proxy: Proxy) -> str:
 
 
 def extract_book_title(html: str) -> str:
-    try:
-        tree = etree.HTML(html, parser=None)
-        div_element = tree.xpath('//div[contains(@class, "qustime")]')[0]
-        span_element = div_element.xpath("./ul/li[1]/a/span")[0]
-        return span_element.text
+    tree = HTMLParser(html)
+    span_element = tree.css_first('div[class*="qustime"] ul li:first-child a span')
 
-    except Exception:
+    if span_element is not None:
+        return span_element.text()
+    else:
         logger.error("The following error occurred when extracting book title")
-        raise
+        raise Exception("Failed to extract book title from HTML")
 
 
 def successful_fetch() -> None:
