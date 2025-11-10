@@ -3,7 +3,7 @@ import os
 from logging.handlers import TimedRotatingFileHandler
 
 from fastapi import Request, Response
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from constants import (
     CONFIG_ACCESS_LOG_PATH,
@@ -76,38 +76,19 @@ def validate_config(
         ) is not None:
             return response
 
-        # Return mitce config by default
+        # Return mitce config by default for config.yaml requests
         if (
-            query_params.get("provider") in ["yidong", "liantong", "dianxin"]
-            and query_params.get("file") == "config.yaml"
+            query_params.get("file") == "config.yaml"
+            and query_params.get("location") is not None
+            and query_params.get("provider") in ["yidong", "liantong", "dianxin"]
             and (response := get_mitce_config(request, client)) is not None
         ):
             return response
 
-
-def reconstruct_request(request: Request, tail: str) -> RedirectResponse | None:
-    path_parts = tail.split("/")
-
-    if len(path_parts) != 4 or len(path_parts[0].split("-")) != 3:
         return None
-
-    new_parameters: dict[str, str] = {
-        "name": path_parts[0].split("-")[0],
-        "uuid": "-".join(path_parts[0].split("-")[1:]),
-        "location": path_parts[1],
-        "provider": path_parts[2],
-        "file": path_parts[3],
-    }
-
-    query_params = dict(request.query_params) | new_parameters
-    new_url = str(request.url.include_query_params(**query_params)).replace(tail, "")
-    return RedirectResponse(url=new_url)
 
 
 async def get_config_file(request: Request, tail: str) -> Response:
-    if (response := reconstruct_request(request, tail)) is not None:
-        return response
-
     clients = await get_clients()
     if (response := validate_config(request, clients)) is not None:
         return response
