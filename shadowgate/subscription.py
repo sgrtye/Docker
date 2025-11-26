@@ -52,7 +52,11 @@ def get_mitce_config(request: Request, client: dict[str, str]) -> FileResponse |
             MITCE_CLASH_PATH,
             media_type="application/x-yaml",
             filename="config.yaml",
-            headers={"subscription-userinfo": user_info},
+            headers={
+                "profile-update-interval": "24",
+                "subscription-userinfo": user_info,
+                "content-disposition": 'attachment; filename="Mitce.yaml"',
+            },
         )
 
     return None
