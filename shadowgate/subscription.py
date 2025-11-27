@@ -55,7 +55,7 @@ def get_mitce_config(request: Request, client: dict[str, str]) -> FileResponse |
             headers={
                 "profile-update-interval": "24",
                 "subscription-userinfo": user_info,
-                "content-disposition": 'attachment; filename="Mitce.yaml"',
+                "content-disposition": "attachment; filename=Mitce.yaml",
             },
         )
 
