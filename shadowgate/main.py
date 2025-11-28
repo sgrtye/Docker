@@ -6,6 +6,7 @@ from functools import partial
 import websockets
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, WebSocket
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from httpx import AsyncClient
 from uvicorn import Config, Server
@@ -163,7 +164,14 @@ async def add_api_routes() -> None:
             methods=REQUEST_METHODS,
         )
 
-        # Config files
+        # Config refresh
+        app.add_api_route(
+            path="/conf/refresh",
+            endpoint=refresh_config,
+            dependencies=[Depends(check_for_host_domain)],
+        )
+
+        # Serve config files
         app.add_api_route(
             path="/conf/{tail:path}",
             endpoint=get_config,
@@ -178,6 +186,12 @@ async def add_api_routes() -> None:
             "/",
             StaticFiles(directory="/website", html=True),
         )
+
+
+async def refresh_config(request: Request) -> Response:
+    await update_mitce_config(MITCE_URL)
+
+    return JSONResponse({"detail": "Not Found!"}, status_code=404)
 
 
 def schedule_config_updates() -> None:
