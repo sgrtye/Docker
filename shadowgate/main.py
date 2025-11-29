@@ -95,35 +95,25 @@ async def forward_to_proxy(websocket: WebSocket, port: str, path: str) -> None:
     try:
         async with websockets.connect(target_url) as backend_ws:
 
-            async def receive_messages(websocket: WebSocket):
-                while True:
-                    yield await websocket.receive()
-
             async def client_to_backend() -> None:
-                try:
-                    async for message in receive_messages(websocket):
-                        if "text" in message:
-                            await backend_ws.send(message["text"])
-                        elif "bytes" in message:
-                            await backend_ws.send(message["bytes"])
-                        else:
-                            raise Exception("Unknown message")
+                while True:
+                    message = await websocket.receive()
 
-                except Exception:
-                    raise
+                    if "text" in message:
+                        await backend_ws.send(message["text"])
+                    elif "bytes" in message:
+                        await backend_ws.send(message["bytes"])
+                    else:
+                        pass
 
             async def backend_to_client() -> None:
-                try:
-                    async for message in backend_ws:
-                        if isinstance(message, bytes):
-                            await websocket.send_bytes(message)
-                        elif isinstance(message, str):
-                            await websocket.send_text(message)
-                        else:
-                            await websocket.send_text(bytes(message).decode("utf-8"))
-
-                except Exception:
-                    raise
+                async for message in backend_ws:
+                    if isinstance(message, bytes):
+                        await websocket.send_bytes(message)
+                    elif isinstance(message, str):
+                        await websocket.send_text(message)
+                    else:
+                        await websocket.send_text(bytes(message).decode("utf-8"))
 
             await asyncio.gather(client_to_backend(), backend_to_client())
 
