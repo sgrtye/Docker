@@ -87,38 +87,38 @@ async def forward_to_dashboard(
     )
 
 
-async def forward_to_proxy(websocket: WebSocket, port: str, path: str) -> None:
+async def forward_to_proxy(incoming_ws: WebSocket, port: str, path: str) -> None:
     target_url: str = f"ws://{PROXY_HOST}:{port}{path}"
 
-    await websocket.accept()
+    await incoming_ws.accept()
 
     try:
         async with websockets.connect(target_url) as backend_ws:
 
             async def client_to_backend() -> None:
                 while True:
-                    message = await websocket.receive()
+                    message = await incoming_ws.receive()
 
                     if "text" in message:
                         await backend_ws.send(message["text"])
                     elif "bytes" in message:
                         await backend_ws.send(message["bytes"])
                     else:
-                        pass
+                        break
 
             async def backend_to_client() -> None:
                 async for message in backend_ws:
                     if isinstance(message, bytes):
-                        await websocket.send_bytes(message)
+                        await incoming_ws.send_bytes(message)
                     elif isinstance(message, str):
-                        await websocket.send_text(message)
+                        await incoming_ws.send_text(message)
                     else:
-                        await websocket.send_text(bytes(message).decode("utf-8"))
+                        await incoming_ws.send_text(bytes(message).decode("utf-8"))
 
             await asyncio.gather(client_to_backend(), backend_to_client())
 
     except Exception:
-        await websocket.close(code=1001)
+        await incoming_ws.close(code=1001)
 
 
 async def get_config(request: Request, tail: str) -> Response:
