@@ -32,9 +32,14 @@ def get_static_config(file_name: str, client: dict[str, str]) -> FileResponse | 
 
 def get_mitce_config(request: Request, client: dict[str, str]) -> FileResponse | None:
     user_agent = request.headers.get("user-agent", "Unknown").lower()
+    logger.info(f"User-Agent: {request.headers.get('user-agent', 'Unknown')}")
+    logger.info(
+        f"User ip: {request.headers.get('x-forwarded-for', request.client.host if request.client else 'Unknown')}"
+    )
 
     if "shadowrocket" in user_agent and os.path.exists(MITCE_SHADOWROCKET_PATH):
         logger.info(f"{client['name']} accessed config.yaml using Shadowrocket")
+
         return FileResponse(
             MITCE_SHADOWROCKET_PATH,
             media_type="application/octet-stream",
@@ -48,6 +53,7 @@ def get_mitce_config(request: Request, client: dict[str, str]) -> FileResponse |
                 user_info = file.read()
 
         logger.info(f"{client['name']} accessed config.yaml using Clash")
+
         return FileResponse(
             MITCE_CLASH_PATH,
             media_type="application/x-yaml",
