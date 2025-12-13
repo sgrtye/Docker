@@ -10,6 +10,7 @@ from constants import (
     MITCE_CLASH_PATH,
     MITCE_CLASH_USERINFO_PATH,
     MITCE_SHADOWROCKET_PATH,
+    MITCE_SING_BOX_PATH,
 )
 from sui import get_clients
 
@@ -32,18 +33,19 @@ def get_static_config(file_name: str, client: dict[str, str]) -> FileResponse | 
 
 def get_mitce_config(request: Request, client: dict[str, str]) -> FileResponse | None:
     user_agent = request.headers.get("user-agent", "Unknown").lower()
-    logger.info(f"User-Agent: {request.headers.get('user-agent', 'Unknown')}")
-    logger.info(
-        f"User ip: {request.headers.get('x-forwarded-for', request.client.host if request.client else 'Unknown')}"
+    ip_address = request.headers.get(
+        "x-forwarded-for", request.client.host if request.client else "Unknown"
     )
 
     if "shadowrocket" in user_agent and os.path.exists(MITCE_SHADOWROCKET_PATH):
-        logger.info(f"{client['name']} accessed config.yaml using Shadowrocket")
+        logger.info(
+            f"{client['name']} accessed config.yaml using Shadowrocket from {ip_address}"
+        )
 
         return FileResponse(
             MITCE_SHADOWROCKET_PATH,
             media_type="application/octet-stream",
-            filename="shadowrocket",
+            filename="Mitce",
         )
 
     if "clash" in user_agent and os.path.exists(MITCE_CLASH_PATH):
@@ -52,7 +54,9 @@ def get_mitce_config(request: Request, client: dict[str, str]) -> FileResponse |
             with open(MITCE_CLASH_USERINFO_PATH, "r") as file:
                 user_info = file.read()
 
-        logger.info(f"{client['name']} accessed config.yaml using Clash")
+        logger.info(
+            f"{client['name']} accessed config.yaml using Clash from {ip_address}"
+        )
 
         return FileResponse(
             MITCE_CLASH_PATH,
@@ -63,6 +67,17 @@ def get_mitce_config(request: Request, client: dict[str, str]) -> FileResponse |
                 "subscription-userinfo": user_info,
                 "content-disposition": "attachment; filename=Mitce.yaml",
             },
+        )
+
+    if "sing-box" in user_agent and os.path.exists(MITCE_SING_BOX_PATH):
+        logger.info(
+            f"{client['name']} accessed config.yaml using Sing-Box from {ip_address}"
+        )
+
+        return FileResponse(
+            MITCE_SING_BOX_PATH,
+            media_type="application/json",
+            filename="Mitce",
         )
 
     return None
