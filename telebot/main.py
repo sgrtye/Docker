@@ -8,7 +8,7 @@ from datetime import datetime
 import docker
 import httpx
 from docker.models.containers import Container
-from telegram import BotCommand, Update
+from telegram import BotCommand, LinkPreviewOptions, Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 logger = logging.getLogger("my_app")
@@ -176,6 +176,7 @@ async def handle_novel_command(
         await update.message.reply_text(
             default_encode(await novel_update()),
             reply_to_message_id=update.message.message_id,
+            link_preview_options=LinkPreviewOptions(is_disabled=True),
         )
 
 
