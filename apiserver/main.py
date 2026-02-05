@@ -190,7 +190,7 @@ def get_ticker_prices(symbol: str) -> tuple[float, float]:
     latest_time: pandas.Timestamp = info.index.max()
     close_value = info.at[latest_time, "Close"]
 
-    assert isinstance(close_value, (numpy.integer, numpy.floating))
+    assert isinstance(close_value, numpy.integer | numpy.floating)
     current_price = float(close_value)
 
     counter: int = 0
@@ -200,7 +200,9 @@ def get_ticker_prices(symbol: str) -> tuple[float, float]:
         previous_time -= pandas.Timedelta(days=1)
         counter += 1
 
-    old_price: float = info.loc[info[info.index >= previous_time].index.min()]["Close"]
+    old_price = info.loc[info[info.index >= previous_time].index.min()]["Close"]
+    assert isinstance(old_price, numpy.integer | numpy.floating)
+    old_price = float(old_price)
 
     return (current_price, old_price)
 
