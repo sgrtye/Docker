@@ -9,7 +9,7 @@ import time
 import tomllib
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED, JobExecutionEvent
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -299,7 +299,9 @@ def schedule_refreshes() -> None:
     )
 
     scheduler.add_job(
-        update_book, "interval", hours=1, start_date=datetime.now() + timedelta(hours=1)
+        update_book,
+        "cron",
+        minute=12,
     )
 
     scheduler.add_listener(job_listener, EVENT_JOB_ERROR | EVENT_JOB_EXECUTED)
