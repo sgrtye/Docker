@@ -158,34 +158,31 @@ def save_titles() -> None:
 def load_titles() -> None:
     if not os.path.exists(BOOK_CACHE_PATH):
         logger.info("No cache found for titles")
-        return
 
-    try:
-        result: dict[str, deque[tuple[str, str]]] = dict()
+    else:
+        logger.info("Loading cache for titles")
 
-        with open(BOOK_CACHE_PATH, "r") as file:
-            cache: dict[str, list[list[str]]] = json.load(file)
+        try:
+            result: dict[str, deque[tuple[str, str]]] = dict()
 
-        for name, info_list in cache.items():
-            if name in [book.name for book in books]:
-                result[name] = deque(
-                    [(info[0], info[1]) for info in info_list], maxlen=5
-                )
+            with open(BOOK_CACHE_PATH, "r") as file:
+                cache: dict[str, list[list[str]]] = json.load(file)
 
-        for book in books:
-            if book.name not in result:
-                result[book.name] = deque(maxlen=5)
+            for name, info_list in cache.items():
+                if name in [book.name for book in books]:
+                    result[name] = deque(
+                        [(info[0], info[1]) for info in info_list], maxlen=5
+                    )
 
-    except Exception as e:
-        logger.error(
-            f"Loading titles failed with {repr(e)}, defaulting to empty title list"
-        )
-        result = {book.name: deque(maxlen=5) for book in books}
+        except Exception as e:
+            logger.error(f"Loading titles failed with {repr(e)}")
+
+    for book in books:
+        if book.name not in result:
+            result[book.name] = deque(maxlen=5)
 
     global titles
     titles = result
-
-    logger.info("Cache loaded for titles")
 
 
 async def get_html_via_scrape_do(url: str) -> str:
