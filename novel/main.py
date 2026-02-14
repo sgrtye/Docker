@@ -156,6 +156,8 @@ def save_titles() -> None:
 
 
 def load_titles() -> None:
+    result: dict[str, deque[tuple[str, str]]] = dict()
+
     if not os.path.exists(BOOK_CACHE_PATH):
         logger.info("No cache found for titles")
 
@@ -163,8 +165,6 @@ def load_titles() -> None:
         logger.info("Loading cache for titles")
 
         try:
-            result: dict[str, deque[tuple[str, str]]] = dict()
-
             with open(BOOK_CACHE_PATH, "r") as file:
                 cache: dict[str, list[list[str]]] = json.load(file)
 
