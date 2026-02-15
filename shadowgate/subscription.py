@@ -81,7 +81,7 @@ def get_mitce_config(request: Request, client: dict[str, str]) -> FileResponse |
         )
 
     logger.info(
-        f"{client['name']} accessed config.yaml using unknown client ({user_agent}) from {ip_address}"
+        f"{client['name']} accessed config.yaml using unknown client ({user_agent}) from {ip_address}, or corresponding config file does not exist"
     )
 
     return None
