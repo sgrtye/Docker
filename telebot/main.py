@@ -66,9 +66,6 @@ async def container_usage() -> list[str]:
     reply.append(f"{'Name':<12} {'CPU':<5}  {'Memory':<5}")
 
     for container in containers:
-        if container["status"] != "running":
-            continue
-
         container_name: str = container["name"]
 
         cpu_percentage: float = container["cpu"]["total"]
