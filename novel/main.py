@@ -229,9 +229,9 @@ async def failed_fetch(e: Exception) -> None:
         raise e
 
 
-def get_first_number(string: str) -> str:
+def get_first_number(string: str) -> int:
     match = re.search(r"\d+", string)
-    return match.group(0) if match else "0"
+    return int(match.group(0)) if match else 0
 
 
 async def update_book() -> None:
@@ -248,11 +248,15 @@ async def update_book() -> None:
 
         if not any(t == title for t, _ in titles[book_name]):
             if titles[book_name]:
-                old_title_number = get_first_number(titles[book_name][-1][0])
-                new_title_number = get_first_number(title)
+                last_title = titles[book_name][-1][0]
+
+                updated_count = get_first_number(title) - get_first_number(last_title)
+
+                if not (1 <= updated_count <= 100):
+                    updated_count = -1
 
                 await send_to_telebot(
-                    f"{book_name}\n已更新至第{new_title_number}章（本次更新：{old_title_number}-{new_title_number}章）\n{url}",
+                    f"{book_name}\n本次更新{updated_count}章\n{last_title:.15}\n->{title:<.13}\n{url}",
                 )
 
             titles[book_name].append((title, datetime.now().isoformat()))
