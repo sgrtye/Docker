@@ -6,7 +6,7 @@ updates:
       - "/"
       - ".github/actions/Docker"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
     groups:
       github-actions:
         patterns:
@@ -20,7 +20,7 @@ updates:
       - "telebot"
       - "template"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
     groups:
       python-dependencies:
         patterns:
