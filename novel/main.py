@@ -44,6 +44,7 @@ else:
 BOOK_PATH: str = "/config/book.toml"
 BOOK_CACHE_PATH: str = "/cache/book_cache.json"
 
+GEO_CODE: str = "JP"
 TARGETING_SITE: str = "oop"
 HEALTH_CHECK_TIMEOUT: int = 60 * 60 * 3  # 3 hours
 
@@ -188,7 +189,7 @@ def load_titles() -> None:
 async def get_html_via_scrape_do(url: str) -> str:
     async with AsyncClient() as client:
         response = await client.get(
-            f"http://api.scrape.do/?url={url}&token={SCRAPER_KEY}"
+            f"http://api.scrape.do/?url={url}&token={SCRAPER_KEY}&geoCode={GEO_CODE}"
         )
         return response.text
 
