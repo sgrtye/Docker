@@ -58,6 +58,7 @@ async def container_usage() -> list[str]:
     if response.status_code != 200:
         return ["Container usage is not currently available"]
 
+    failed_count: int = 0
     total_cpu_usage: float = 0
     total_memory_usage: int = 0
     containers: list[dict] = response.json()
@@ -66,25 +67,35 @@ async def container_usage() -> list[str]:
     reply.append(f"{'Name':<12} {'CPU':<5}  {'Memory':<5}")
 
     for container in containers:
-        container_name: str = container["name"]
+        try:
+            container_name: str = container["name"]
 
-        cpu_percentage: float = container["cpu"]["total"]
+            cpu_percentage: float = container["cpu"]["total"]
 
-        memory_usage: int = container["memory"]["usage"]
-        memory_usage_mb: float = memory_usage / (1024 * 1024)
+            memory_usage: int = container["memory"]["usage"]
+            memory_usage_mb: float = memory_usage / (1024 * 1024)
 
-        total_cpu_usage += cpu_percentage
-        total_memory_usage += memory_usage
+            total_cpu_usage += cpu_percentage
+            total_memory_usage += memory_usage
 
-        reply.append(
-            f"{container_name:<12} {cpu_percentage:<5.2f}% {memory_usage_mb:<5.1f} MB"
-        )
+            reply.append(
+                f"{container_name:<12} {cpu_percentage:<5.2f}% {memory_usage_mb:<5.1f} MB"
+            )
+        except Exception as e:
+            failed_count += 1
+            logger.error(
+                f"Error {repr(e)} occurred when processing container data {container}"
+            )
+            continue
 
     total_memory_usage_mb: float = total_memory_usage / (1024 * 1024)
 
     reply.append("")
     reply.append(f"Docker CPU Usage: {total_cpu_usage:.2f} %")
     reply.append(f"Docker Memory Usage: {total_memory_usage_mb:.2f} MB")
+
+    if failed_count > 0:
+        reply.append(f"Failed to retrieve data for {failed_count} containers")
 
     return reply
 
