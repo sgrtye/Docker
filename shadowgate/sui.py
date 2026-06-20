@@ -95,13 +95,13 @@ async def get_clients() -> list[dict[str, str]]:
         load_response = await get_load_json()
 
         id_list: list[int] = [
-            client["id"] for client in load_response["obj"].get("clients", [])
+            client["id"] for client in load_response["obj"].get("clients", []) if client["enable"]
         ]
         clients_response = await get_clients_json(id_list)
 
         results: list[dict[str, str]] = []
         for client in clients_response["obj"].get("clients", []):
-            # Add clients with valid vless config
+            # Add clients with valid Vless config
             try:
                 assert "vless" in client["config"]
 
