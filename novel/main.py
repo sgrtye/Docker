@@ -29,14 +29,21 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.propagate = False
 
+bark_url: str | None = os.getenv("BARK_URL")
 scraper_key: str | None = os.getenv("SCRAPER_KEY")
 telebot_token: str | None = os.getenv("TELEBOT_TOKEN")
 telebot_user_id: str | None = os.getenv("TELEBOT_USER_ID")
 
-if scraper_key is None or telebot_token is None or telebot_user_id is None:
+if (
+    bark_url is None
+    or scraper_key is None
+    or telebot_token is None
+    or telebot_user_id is None
+):
     logger.critical("Environment variables not fulfilled")
     raise SystemExit(1)
 else:
+    BARK_URL: str = bark_url
     SCRAPER_KEY: str = scraper_key
     TELEBOT_TOKEN: str = telebot_token
     TELEBOT_USER_ID: str = telebot_user_id
@@ -116,6 +123,22 @@ async def send_to_telebot(message: str) -> None:
 
     except Exception as e:
         logger.error(f"Error occurred when sending message to telegram: {repr(e)}")
+
+
+async def send_to_bark(title: str, message: str) -> None:
+    try:
+        async with AsyncClient() as client:
+            await client.post(
+                BARK_URL,
+                json={
+                    "title": title,
+                    "body": message,
+                    "group": "Novel",
+                },
+            )
+
+    except Exception as e:
+        logger.error(f"Error occurred when sending message to bark server: {repr(e)}")
 
 
 def load_books() -> None:
@@ -226,6 +249,7 @@ async def failed_fetch(e: Exception) -> None:
     if loop_index == len(books):
         save_titles()
         await send_to_telebot(f"Novel monitor terminating from error {repr(e)}")
+        await send_to_bark("Novel monitor terminating", f"Error: {repr(e)}")
         logger.critical(f"Program terminating from error {repr(e)}")
         raise e
 
@@ -258,6 +282,10 @@ async def update_book() -> None:
 
                 await send_to_telebot(
                     f"{book_name}\n本次更新{updated_count}章\n{last_title:.15}\n->{title:<.13}\n{url}",
+                )
+                await send_to_bark(
+                    book_name,
+                    f"本次更新{updated_count}章\n{last_title}\n->{title}\n{url}",
                 )
 
             titles[book_name].append((title, datetime.now().isoformat()))
