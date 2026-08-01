@@ -1,6 +1,6 @@
-import signal
 import asyncio
 import platform
+import signal
 
 
 def handle_termination_signal(signum, frame) -> None:

@@ -1,8 +1,7 @@
-import time
-import threading
 import http.server
 import socketserver
-
+import threading
+import time
 
 lastUpdatedTime: float = time.time()
 

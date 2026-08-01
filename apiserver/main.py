@@ -38,12 +38,12 @@ else:
     SUI_TOKEN: str = sui_token
 
 
-sui_status: dict[str, str] = dict()
-stock_status: dict[str, str] = dict()
-index_status: dict[str, str] = dict()
-crypto_status: dict[str, str] = dict()
-currency_status: dict[str, str] = dict()
-commodity_status: dict[str, str] = dict()
+sui_status: dict[str, str] = {}
+stock_status: dict[str, str] = {}
+index_status: dict[str, str] = {}
+crypto_status: dict[str, str] = {}
+currency_status: dict[str, str] = {}
+commodity_status: dict[str, str] = {}
 
 TREND_ENDING: str = "_TREND"
 
@@ -64,9 +64,7 @@ MAPPING: dict[str, dict[str, str]] = {
 }
 
 sui_session = httpx.AsyncClient()
-tickers = yfinance.Tickers(
-    " ".join([STOCKS, INDICES, CRYPTOS, CURRENCIES, COMMODITIES])
-)
+tickers = yfinance.Tickers(f"{STOCKS} {INDICES} {CRYPTOS} {CURRENCIES} {COMMODITIES}")
 
 last_updated_time: float = time.time()
 
@@ -180,8 +178,8 @@ async def update_sui_status() -> None:
         sui_status.update(await get_sui_status())
 
     # Exception handled by displaying the above default values
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Error occurred while updating SUI status: {e:r}")
 
 
 def get_ticker_prices(symbol: str) -> tuple[float, float]:
@@ -208,7 +206,7 @@ def get_ticker_prices(symbol: str) -> tuple[float, float]:
 
 
 def get_info_by_ticker(tickers: str) -> dict[str, str]:
-    info: dict[str, str] = dict()
+    info: dict[str, str] = {}
     ticker_list: list[str] = tickers.split(" ")
 
     for ticker in ticker_list:
@@ -220,7 +218,7 @@ def get_info_by_ticker(tickers: str) -> dict[str, str]:
 
         except Exception as e:
             logger.error(
-                f"Error {repr(e)} occurred on line {e.__traceback__.tb_lineno if e.__traceback__ else '-1'}"
+                f"Error {e:r} occurred on line {e.__traceback__.tb_lineno if e.__traceback__ else '-1'}"
             )
 
     if info:
@@ -261,9 +259,9 @@ def update_status(symbols: str) -> None:
 
 
 def save_status() -> None:
-    cache: dict[str, str] = dict()
-    for symbols in MAPPING.keys():
-        cache.update(MAPPING[symbols])
+    cache: dict[str, str] = {}
+    for values in MAPPING.values():
+        cache.update(values)
 
     with open(CACHE_PATH, "w") as file:
         json.dump(cache, file)
@@ -314,7 +312,6 @@ async def main() -> None:
 
         case _:
             logger.info("Signal handler registration skipped.")
-            pass
 
     logger.info("API server started")
 

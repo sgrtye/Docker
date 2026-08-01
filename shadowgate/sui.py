@@ -79,14 +79,14 @@ async def get_vless_inbounds() -> list[dict[str, str]]:
                 }
                 results.append(info)
 
-            except Exception:
-                logger.warning("Failed to parse an inbound, skipping")
+            except Exception as e:
+                logger.warning(f"Failed to parse an inbound, skipping: {e:r}")
                 continue
 
         return results
 
-    except Exception:
-        logger.critical("Failed to parse inbounds")
+    except Exception as e:
+        logger.critical(f"Failed to parse inbounds: {e:r}")
         return []
 
 
@@ -111,12 +111,12 @@ async def get_clients() -> list[dict[str, str]]:
                 }
                 results.append(info)
 
-            except Exception:
-                logger.warning("Failed to parse a client, skipping")
+            except Exception as e:
+                logger.warning(f"Failed to parse a client, skipping: {e:r}")
                 continue
 
         return results
 
-    except Exception:
-        logger.error("Failed to parse clients")
+    except Exception as e:
+        logger.error(f"Failed to parse clients: {e:r}")
         return []

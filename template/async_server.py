@@ -1,12 +1,12 @@
-import time
 import asyncio
+import time
 from functools import partial
-from httpx import AsyncClient
-from uvicorn import Config, Server
+
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Request, Response, Depends, WebSocket, HTTPException
-
+from httpx import AsyncClient
+from uvicorn import Config, Server
 
 REQUEST_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
 app = FastAPI()
@@ -22,7 +22,7 @@ NO_CACHE_HEADER = {
 
 
 @app.get("/health")
-async def health_endpoint():
+async def health_endpoint() -> JSONResponse:
     if time.time() - last_updated_time <= 5:
         return JSONResponse(content={"message": "OK"}, headers=NO_CACHE_HEADER)
     else:
@@ -56,23 +56,12 @@ async def http_route(request: Request, tail: str, arg: str) -> Response:
     )
 
 
-async def websocket_route(websocket: WebSocket, tail: str, arg: str) -> Response:
-    await websocket.accept()
-    await asyncio.sleep(5)
-    await websocket.close(code=1001)
-
-
 def add_api_routes() -> None:
     app.add_api_route(
-        path=f"/http/{{tail:path}}",
+        path="/http/{{tail:path}}",
         endpoint=partial(http_route, arg="arg1"),
         dependencies=[Depends(depends_checker)],
         methods=REQUEST_METHODS,
-    )
-
-    app.router.add_websocket_route(
-        path=f"/ws/{{tail:path}}",
-        endpoint=partial(websocket_route, arg="arg1"),
     )
 
     app.mount(

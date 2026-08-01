@@ -84,7 +84,7 @@ async def container_usage() -> list[str]:
         except Exception as e:
             failed_count += 1
             logger.error(
-                f"Error {repr(e)} occurred when processing container data {container}"
+                f"Error {e:r} occurred when processing container data {container}"
             )
             continue
 

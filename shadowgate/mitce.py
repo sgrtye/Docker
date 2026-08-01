@@ -76,5 +76,5 @@ async def update_mitce_config(MITCE_URL: str) -> None:
         if all((clash_result, shadowrocket_result, sing_box_result)):
             logger.info("New mitce config files fetched")
 
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Error occurred while updating mitce config files: {e:r}")
