@@ -77,4 +77,4 @@ async def update_mitce_config(MITCE_URL: str) -> None:
             logger.info("New mitce config files fetched")
 
     except Exception as e:
-        logger.error(f"Error occurred while updating mitce config files: {e:r}")
+        logger.error(f"Error occurred while updating mitce config files: {e!r}")

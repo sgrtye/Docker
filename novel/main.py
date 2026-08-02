@@ -122,7 +122,7 @@ async def send_to_telebot(message: str) -> None:
             await client.post(url, json=payload)
 
     except Exception as e:
-        logger.error(f"Error occurred when sending message to telegram: {e:r}")
+        logger.error(f"Error occurred when sending message to telegram: {e!r}")
 
 
 async def send_to_bark(title: str, message: str) -> None:
@@ -138,7 +138,7 @@ async def send_to_bark(title: str, message: str) -> None:
             )
 
     except Exception as e:
-        logger.error(f"Error occurred when sending message to bark server: {e:r}")
+        logger.error(f"Error occurred when sending message to bark server: {e!r}")
 
 
 def load_books() -> None:
@@ -162,7 +162,7 @@ def load_books() -> None:
                     result.append(Book(novel["name"], site["url"]))
 
     except Exception as e:
-        logger.critical(f"Loading books failed with {e:r}")
+        logger.critical(f"Loading books failed with {e!r}")
         raise SystemExit(1)
 
     global books
@@ -199,7 +199,7 @@ def load_titles() -> None:
                     )
 
         except Exception as e:
-            logger.error(f"Loading titles failed with {e:r}")
+            logger.error(f"Loading titles failed with {e!r}")
 
     for book in books:
         if book.name not in result:
@@ -248,9 +248,9 @@ async def failed_fetch(e: Exception) -> None:
 
     if loop_index == len(books):
         save_titles()
-        await send_to_telebot(f"Novel monitor terminating from error {e:r}")
-        await send_to_bark("Novel monitor terminating", f"Error: {e:r}")
-        logger.critical(f"Program terminating from error {e:r}")
+        await send_to_telebot(f"Novel monitor terminating from error {e!r}")
+        await send_to_bark("Novel monitor terminating", f"Error: {e!r}")
+        logger.critical(f"Program terminating from error {e!r}")
         raise e
 
 
@@ -293,7 +293,7 @@ async def update_book() -> None:
         successful_fetch()
 
     except Exception as e:
-        logger.error(f"Error {e:r} occurred when checking {book_name}")
+        logger.error(f"Error {e!r} occurred when checking {book_name}")
         logger.error(
             f"Error occurred during iteration {loop_index} on line {e.__traceback__.tb_lineno if e.__traceback__ else '-1'}"
         )

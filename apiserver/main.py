@@ -179,7 +179,7 @@ async def update_sui_status() -> None:
 
     # Exception handled by displaying the above default values
     except Exception as e:
-        logger.error(f"Error occurred while updating SUI status: {e:r}")
+        logger.error(f"Error occurred while updating SUI status: {e!r}")
 
 
 def get_ticker_prices(symbol: str) -> tuple[float, float]:
@@ -218,7 +218,7 @@ def get_info_by_ticker(tickers: str) -> dict[str, str]:
 
         except Exception as e:
             logger.error(
-                f"Error {e:r} occurred on line {e.__traceback__.tb_lineno if e.__traceback__ else '-1'}"
+                f"Error {e!r} occurred on line {e.__traceback__.tb_lineno if e.__traceback__ else '-1'}"
             )
 
     if info:
