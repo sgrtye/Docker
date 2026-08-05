@@ -1,4 +1,5 @@
 name: Docker
+description: "Build and push docker image to registry"
 
 inputs:
   REGISTRY_ADDRESS:
