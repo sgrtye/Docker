@@ -15,7 +15,7 @@ from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED, JobExecution
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from httpx import AsyncClient
+from httpx import AsyncClient, Timeout
 from selectolax.parser import HTMLParser
 from uvicorn import Config, Server
 
@@ -210,9 +210,14 @@ def load_titles() -> None:
 
 
 async def get_html_via_scrape_do(url: str) -> str:
-    async with AsyncClient() as client:
+    async with AsyncClient(timeout=Timeout(60.0)) as client:
         response = await client.get(
-            f"http://api.scrape.do/?url={url}&token={SCRAPER_KEY}&geoCode={GEO_CODE}"
+            "http://api.scrape.do/",
+            params={
+                "url": url,
+                "token": SCRAPER_KEY,
+                "geoCode": GEO_CODE,
+            },
         )
         return response.text
 
