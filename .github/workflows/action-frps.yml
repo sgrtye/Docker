@@ -1,13 +1,13 @@
-name: FRP build
+name: FRPS build
 
 on:
   push:
     paths:
-      - "frp/**"
+      - "frps/**"
   workflow_dispatch:
 
 jobs:
-  frp:
+  frps:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -18,6 +18,6 @@ jobs:
         uses: ./.github/actions/Docker
         with:
           REGISTRY_PASSWORD: ${{ secrets.DOCKER_HUB_TOKEN }}
-          DOCKER_BUILD_NAME: "frp"
-          DOCKER_BUILD_PATH: "./frp"
+          DOCKER_BUILD_NAME: "frps"
+          DOCKER_BUILD_PATH: "./frps"
           DOCKER_BUILD_TAG: ${{ github.ref_name == 'main' && 'latest' || 'dev' }}
