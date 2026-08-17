@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  APIServer:
+  apiserver:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 

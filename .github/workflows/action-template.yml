@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  Template:
+  template:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 

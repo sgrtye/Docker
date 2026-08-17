@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  Telebot:
+  telebot:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
