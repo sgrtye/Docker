@@ -1,0 +1,23 @@
+name: FRP build
+
+on:
+  push:
+    paths:
+      - "frp/**"
+  workflow_dispatch:
+
+jobs:
+  frp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build and push to Docker Hub
+        uses: ./.github/actions/Docker
+        with:
+          REGISTRY_PASSWORD: ${{ secrets.DOCKER_HUB_TOKEN }}
+          DOCKER_BUILD_NAME: "frp"
+          DOCKER_BUILD_PATH: "./frp"
+          DOCKER_BUILD_TAG: ${{ github.ref_name == 'main' && 'latest' || 'dev' }}
