@@ -9,5 +9,5 @@ dependencies = [
     "fastapi>=0.141.1",
     "httpx>=0.28.1",
     "selectolax>=0.4.11",
-    "uvicorn>=0.52.3",
+    "uvicorn>=0.52.4",
 ]
