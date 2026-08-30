@@ -18,6 +18,6 @@ RUN composer install
 VOLUME /app/env
 
 RUN chmod 755 /app/entry.sh
-RUN crontab /app/crontab.txt
+RUN /usr/bin/crontab /app/crontab.txt
 
 CMD ["/app/entry.sh"]
