@@ -1,1 +1,1 @@
-3-59/15 * * * * /usr/local/bin/php /app/index.php /env/.env >> /proc/1/fd/1 2>> /proc/1/fd/2
+3-59/5 * * * * /usr/local/bin/php /app/index.php /env/.env >> /proc/1/fd/1 2>> /proc/1/fd/2
