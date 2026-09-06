@@ -108,7 +108,7 @@ foreach ($availabilityDomains as $availabilityDomainEntity) {
             strpos($message, 'Out of host capacity') !== false
         ) {
             // trying next availability domain
-            sleep(30);
+            sleep(60);
             continue;
         }
 
