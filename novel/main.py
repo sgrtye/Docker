@@ -16,7 +16,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from httpx import AsyncClient, Timeout
-from selectolax.parser import HTMLParser
+from selectolax.lexbor import LexborHTMLParser
 from uvicorn import Config, Server
 
 logger = logging.getLogger("my_app")
@@ -223,7 +223,7 @@ async def get_html_via_scrape_do(url: str) -> str:
 
 
 def extract_book_title(html: str) -> str:
-    tree = HTMLParser(html)
+    tree = LexborHTMLParser(html)
     a_node = tree.css_first("div.latest-chapter a")
 
     if a_node is not None:
