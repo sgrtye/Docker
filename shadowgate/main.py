@@ -211,7 +211,7 @@ async def main() -> None:
     )
 
     await add_api_routes()
-    schedule_config_updates()
+    # schedule_config_updates()
 
     logger.info("Starting API server")
     await start_api_server()
