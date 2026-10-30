@@ -52,7 +52,7 @@ BOOK_PATH: str = "/config/book.toml"
 BOOK_CACHE_PATH: str = "/cache/book_cache.json"
 
 GEO_CODE: str = "JP"
-TARGETING_SITE: str = "oop"
+TARGETING_SITE: str = "twkan"
 HEALTH_CHECK_TIMEOUT: int = 60 * 60 * 3  # 3 hours
 
 
@@ -224,10 +224,10 @@ async def get_html_via_scrape_do(url: str) -> str:
 
 def extract_book_title(html: str) -> str:
     tree = LexborHTMLParser(html)
-    a_node = tree.css_first("div.latest-chapter a")
+    node = tree.css_first('meta[property="og:novel:latest_chapter_name"]')
 
-    if a_node is not None:
-        return a_node.text(strip=True)
+    if node is not None:
+        return node.attributes.get("content")
     else:
         logger.error("The following error occurred when extracting book title")
         raise Exception("Failed to extract book title from HTML")
