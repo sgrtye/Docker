@@ -65,7 +65,8 @@ class Book:
 scheduler = AsyncIOScheduler()
 
 books: list[Book] = []
-titles: dict[str, deque[tuple[str, str]]] = {}  # {book: deque[title, date]}
+titles: dict[str, deque[tuple[str, str]]] = {}  # {book: deque[title, datetime]}
+last_checked_time: dict[str, str] = {}  # {book: datetime}
 
 book_index: int = 0
 loop_index: int = 0
@@ -98,14 +99,15 @@ async def health_endpoint() -> JSONResponse:
         )
 
 
-@app.get("/update")
+@app.get("/updates")
 async def update_endpoint() -> JSONResponse:
-    payload: dict[str, tuple[str, str, str]] = {
+    payload: dict[str, tuple[str, str, str, str]] = {
         book.name: (
             titles[book.name][-1][0] if titles[book.name] else "Unknown",
             titles[book.name][-1][1]
             if titles[book.name]
             else datetime(2000, 1, 1).astimezone().isoformat(),
+            last_checked_time.get(book.name, datetime(2000, 1, 1).astimezone().isoformat()),
             book.url,
         )
         for book in books
@@ -272,6 +274,8 @@ async def update_book() -> None:
         url = books[book_index].url
         html = await get_html_via_scrape_do(url)
         title = extract_book_title(html)
+
+        last_checked_time[book_name] = datetime.now().astimezone().isoformat()
 
         if title is None:
             raise Exception("Should never happen with a valid proxy")
