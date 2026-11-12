@@ -1,1 +1,1 @@
-*/2 * * * * uv run --no-sync template
+*/2 * * * * cd /app && uv run --no-sync template
