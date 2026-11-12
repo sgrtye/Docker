@@ -357,7 +357,7 @@ def schedule_refreshes() -> None:
     scheduler.start()
 
 
-async def main() -> None:
+async def async_main() -> None:
     load_books()
     load_titles()
 
@@ -377,5 +377,9 @@ async def main() -> None:
     await start_api_server()
 
 
+def main() -> None:
+    asyncio.run(async_main())
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
