@@ -1,1 +1,1 @@
-*/2 * * * * uv run main.py
+*/2 * * * * uv run --no-sync template

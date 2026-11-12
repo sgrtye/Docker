@@ -1,5 +1,6 @@
 #!/bin/sh
+set -e
 
 # A test run of the template project then start the cron job
-uv run template
-/usr/sbin/crond -f -l 8
+uv run --no-sync template
+exec /usr/sbin/crond -f -l 8
