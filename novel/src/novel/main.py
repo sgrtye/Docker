@@ -107,7 +107,9 @@ async def update_endpoint() -> JSONResponse:
             titles[book.name][-1][1]
             if titles[book.name]
             else datetime(2000, 1, 1).astimezone().isoformat(),
-            last_checked_time.get(book.name, datetime(2000, 1, 1).astimezone().isoformat()),
+            last_checked_time.get(
+                book.name, datetime(2000, 1, 1).astimezone().isoformat()
+            ),
             book.url,
         )
         for book in books
@@ -221,6 +223,7 @@ async def get_html_via_scrape_do(url: str) -> str:
                 "geoCode": GEO_CODE,
             },
         )
+
         return response.text
 
 
@@ -229,7 +232,13 @@ def extract_book_title(html: str) -> str:
     node = tree.css_first('meta[property="og:novel:latest_chapter_name"]')
 
     if node is not None:
-        return node.attributes.get("content")
+        title = node.attributes.get("content")
+
+        if title is not None:
+            return title.strip()
+        else:
+            raise Exception("Title node has no content attribute")
+
     else:
         logger.error("The following error occurred when extracting book title")
         raise Exception("Failed to extract book title from HTML")
@@ -361,7 +370,6 @@ async def main() -> None:
 
         case _:
             logger.info("Signal handler registration skipped.")
-            pass
 
     schedule_refreshes()
     logger.info("Novel monitor started")
