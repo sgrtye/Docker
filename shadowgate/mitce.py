@@ -8,13 +8,14 @@ from constants import (
     MITCE_CLASH_USERINFO_PATH,
     MITCE_SHADOWROCKET_PATH,
     MITCE_SING_BOX_PATH,
+    USER_AGENT,
 )
 
 logger = logging.getLogger("my_app")
 
 
 async def fetch_mitce_config(mitce_url: str, suffix: str) -> Response:
-    async with AsyncClient() as client:
+    async with AsyncClient(headers={"User-Agent": USER_AGENT[suffix]}) as client:
         return await client.get(f"{mitce_url}&app={suffix}")
 
 
@@ -53,7 +54,7 @@ async def update_clash_config(MITCE_URL: str) -> bool:
 
 
 async def update_sing_box_config(MITCE_URL: str) -> bool:
-    sing_box_response = await fetch_mitce_config(MITCE_URL, "sb_111")
+    sing_box_response = await fetch_mitce_config(MITCE_URL, "sb_114")
 
     if sing_box_response.status_code != 200:
         logger.error("Sing box config failed to update")
