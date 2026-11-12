@@ -1,4 +1,4 @@
-FROM python:3.14-alpine
+FROM python:3.15-alpine
 ENV PYTHONUNBUFFERED=1
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
@@ -10,7 +10,7 @@ RUN uv sync --locked && uv cache clean
 # RUN apk --update --no-cache add curl
 # HEALTHCHECK --start-period=10s --interval=60s --timeout=3s CMD curl -f http://localhost:80/health || exit 1
 
-# CMD ["uv", "run", "main.py"]
+# CMD ["uv", "run", "template"]
 
 RUN chmod 755 ./entry.sh
 RUN /usr/bin/crontab ./crontab.txt
