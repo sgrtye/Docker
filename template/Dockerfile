@@ -13,6 +13,8 @@ RUN uv sync --locked --no-dev && uv cache clean
 
 # CMD ["uv", "run", "--no-sync", "template"]
 
+RUN apt-get update && apt-get install -y cron && rm -rf /var/lib/apt/lists/*
+
 RUN chmod 755 ./entry.sh
 RUN /usr/bin/crontab ./crontab.txt
 
