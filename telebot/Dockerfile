@@ -8,4 +8,4 @@ COPY . /app
 RUN uv sync --locked --no-dev && uv cache clean
 
 
-CMD ["uv", "run", "--no-sync", "novel"]
+CMD ["uv", "run", "--no-sync", "telebot"]

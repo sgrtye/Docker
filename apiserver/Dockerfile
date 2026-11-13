@@ -13,4 +13,4 @@ HEALTHCHECK --start-period=10s --interval=60s --timeout=3s CMD curl -f http://lo
 
 VOLUME /cache
 
-CMD ["uv", "run", "--no-sync", "novel"]
+CMD ["uv", "run", "--no-sync", "apiserver"]
