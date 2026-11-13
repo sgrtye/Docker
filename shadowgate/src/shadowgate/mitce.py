@@ -3,7 +3,7 @@ import os
 
 from httpx import AsyncClient, Response
 
-from constants import (
+from shadowgate.constants import (
     MITCE_CLASH_PATH,
     MITCE_CLASH_USERINFO_PATH,
     MITCE_SHADOWROCKET_PATH,

@@ -11,9 +11,9 @@ from fastapi.staticfiles import StaticFiles
 from httpx import AsyncClient
 from uvicorn import Config, Server
 
-from mitce import update_mitce_config
-from subscription import get_config_file
-from sui import get_vless_inbounds, set_credentials
+from shadowgate.mitce import update_mitce_config
+from shadowgate.subscription import get_config_file
+from shadowgate.sui import get_vless_inbounds, set_credentials
 
 logger = logging.getLogger("my_app")
 logger.setLevel(logging.INFO)
@@ -202,7 +202,7 @@ async def start_api_server() -> None:
     await Server(config).serve()
 
 
-async def main() -> None:
+async def async_main() -> None:
     set_credentials(
         SUI_TOKEN,
         PROXY_HOST,
@@ -217,5 +217,9 @@ async def main() -> None:
     await start_api_server()
 
 
+def main() -> None:
+    asyncio.run(async_main())
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

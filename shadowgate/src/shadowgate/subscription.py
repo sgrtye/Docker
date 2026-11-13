@@ -5,14 +5,14 @@ from logging.handlers import TimedRotatingFileHandler
 from fastapi import Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 
-from constants import (
+from shadowgate.constants import (
     CONFIG_ACCESS_LOG_PATH,
     MITCE_CLASH_PATH,
     MITCE_CLASH_USERINFO_PATH,
     MITCE_SHADOWROCKET_PATH,
     MITCE_SING_BOX_PATH,
 )
-from sui import get_clients
+from shadowgate.sui import get_clients
 
 logger = logging.getLogger("config_access")
 logger.setLevel(logging.INFO)

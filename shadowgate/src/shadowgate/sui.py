@@ -5,10 +5,9 @@ import httpx
 logger = logging.getLogger("my_app")
 
 
-sui_session = httpx.AsyncClient()
-
 SUI_URL: str = ""
 SUI_TOKEN: str = ""
+sui_session = httpx.AsyncClient()
 
 
 def set_credentials(
@@ -95,7 +94,9 @@ async def get_clients() -> list[dict[str, str]]:
         load_response = await get_load_json()
 
         id_list: list[int] = [
-            client["id"] for client in load_response["obj"].get("clients", []) if client["enable"]
+            client["id"]
+            for client in load_response["obj"].get("clients", [])
+            if client["enable"]
         ]
         clients_response = await get_clients_json(id_list)
 
