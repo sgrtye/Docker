@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from telebot!")
+from .main import main as main

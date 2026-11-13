@@ -300,7 +300,7 @@ def handle_termination_signal() -> None:
     raise SystemExit(0)
 
 
-async def main() -> None:
+async def async_main() -> None:
     load_cache()
 
     match platform.system():
@@ -319,5 +319,9 @@ async def main() -> None:
     await start_api_server()
 
 
+def main() -> None:
+    asyncio.run(async_main())
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
