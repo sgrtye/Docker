@@ -3,13 +3,23 @@ name = "apiserver"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14"
+authors = [
+    { name = "sgrtye", email = "sgrtye@gmail.com" }
+]
+requires-python = ">=3.15"
 dependencies = [
     "apscheduler>=3.11.3",
-    "fastapi>=0.141.1",
+    "fastapi>=0.162.5",
     "httpx>=0.28.1",
-    "numpy>=2.5.2",
-    "pandas>=3.0.5",
-    "uvicorn>=0.52.1",
-    "yfinance>=1.5.2",
+    "numpy>=2.5.4",
+    "pandas>=3.1.1",
+    "uvicorn>=0.54.0",
+    "yfinance>=1.8.0",
 ]
+
+[project.scripts]
+apiserver = "apiserver:main"
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"

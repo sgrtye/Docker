@@ -1,10 +1,11 @@
-FROM python:3.14-alpine
+FROM python:3.15-alpine
 ENV PYTHONUNBUFFERED=1
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-COPY . /app
 WORKDIR /app
-RUN uv sync --locked && uv cache clean
+COPY . /app
+
+RUN uv sync --locked --no-dev && uv cache clean
 
 EXPOSE 80
 RUN apk --update --no-cache add curl
@@ -12,4 +13,4 @@ HEALTHCHECK --start-period=10s --interval=60s --timeout=3s CMD curl -f http://lo
 
 VOLUME /cache
 
-CMD ["uv", "run", "main.py"]
+CMD ["uv", "run", "--no-sync", "novel"]
