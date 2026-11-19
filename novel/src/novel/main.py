@@ -299,7 +299,7 @@ async def update_book() -> None:
                     updated_count = -1
 
                 await send_to_telebot(
-                    f"{book_name}\n本次更新{updated_count}章\n{last_title:.15}\n->{title:<.13}\n{url}",
+                    f"{book_name}\n本次更新{updated_count}章\n{last_title}\n->{title}\n{url}",
                 )
                 await send_to_bark(
                     book_name,
