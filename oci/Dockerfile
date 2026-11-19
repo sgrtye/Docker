@@ -1,3 +1,5 @@
+# The oci-arm-host-capacity repository is no longer maintained.
+# Fix php version to 8.3 to avoid deprecation warnings.
 FROM php:8.3-cli
 
 RUN apt-get update \
